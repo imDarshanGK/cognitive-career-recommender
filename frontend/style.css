@@ -135,7 +135,7 @@ body {
 .project-title {
     font-size: 3.5rem;
     font-weight: 700;
-    margin-bottom: 1.5rem;
+    margin-bottom: 0.8rem;
     background: linear-gradient(45deg, #fff, #e0e7ff);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -242,46 +242,49 @@ body {
 }
 
 .btn-primary {
-    background: linear-gradient(45deg, #00E5A8, #00C2FF);
+    background: linear-gradient(45deg, #6C63FF, #00C2FF);
     color: #fff;
-    box-shadow: 0 4px 15px rgba(0, 229, 168, 0.4);
+    box-shadow: 0 4px 15px rgba(108, 99, 255, 0.4);
 }
 
 .btn-primary:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(0, 229, 168, 0.6);
+    box-shadow: 0 8px 25px rgba(108, 99, 255, 0.6);
 }
 
 .btn-secondary {
     background: transparent;
     color: #fff;
-    border: 2px solid #fff;
+    border: 2px solid #6C63FF;
     border-radius: 50px;
+    box-shadow: inset 0 0 0 2px #6C63FF;
 }
 
 .btn-secondary:hover {
-    background: #fff;
-    color: #5b52e8;
+    background: #6C63FF;
+    color: #fff;
     transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(108, 99, 255, 0.4);
 }
 
 .btn-demo {
-    background: rgba(255, 255, 255, 0.15);
-    color: #fff;
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    background: transparent;
+    color: rgba(255, 255, 255, 0.8);
+    border: none;
     border-radius: 50px;
-    -webkit-backdrop-filter: blur(10px);
-    backdrop-filter: blur(10px);
-    font-size: 0.9rem;
-    padding: 0.8rem 1.8rem;
-    min-width: 140px;
+    font-size: 0.85rem;
+    padding: 0.7rem 1.5rem;
+    min-width: 120px;
+    font-weight: 500;
+    text-decoration: underline;
+    text-underline-offset: 4px;
+    text-decoration-color: rgba(255, 255, 255, 0.3);
 }
 
 .btn-demo:hover {
-    background: rgba(255, 255, 255, 0.25);
-    border-color: rgba(255, 255, 255, 0.5);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 15px rgba(255, 255, 255, 0.2);
+    color: #fff;
+    text-decoration-color: rgba(255, 255, 255, 0.8);
+    transform: translateY(-1px);
 }
 
 /* Features Section */
@@ -666,8 +669,7 @@ body {
     
     .btn-demo {
         max-width: 200px;
-        font-size: 0.85rem;
-        padding: 0.7rem 1.5rem;
+        padding: 0.6rem 1.2rem;
     }
     
     .features-title {
