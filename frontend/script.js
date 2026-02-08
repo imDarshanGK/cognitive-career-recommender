@@ -1,5 +1,6 @@
 // Wait for DOM to be fully loaded
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 Script loaded successfully!');
     
     try {
         // Get button elements with error checking
@@ -7,64 +8,44 @@ document.addEventListener('DOMContentLoaded', function() {
         const loginBtn = document.getElementById('loginBtn');
         const tryDemoBtn = document.getElementById('tryDemoBtn');
         
-        if (!getStartedBtn || !loginBtn || !tryDemoBtn) {
-            console.warn('Navigation buttons not found');
-            return;
-        }
+        console.log('Button search results:', {
+            getStarted: !!getStartedBtn,
+            login: !!loginBtn,
+            tryDemo: !!tryDemoBtn
+        });
         
         // Get Started Button Functionality
-        getStartedBtn.addEventListener('click', function(e) {
-            try {
-                e.preventDefault();
-                // Add click animation
-                this.style.transform = 'scale(0.95)';
-                setTimeout(() => {
-                    this.style.transform = '';
-                    // Navigate to auth page with register tab active
-                    window.location.href = 'auth.html#register';
-                }, 150);
-            } catch (error) {
-                console.error('Error in Get Started button:', error);
-                // Fallback navigation
-                window.location.href = 'auth.html';
-            }
-        });
+        if (getStartedBtn) {
+            console.log('Get Started button found, adding event listener');
+            getStartedBtn.addEventListener('click', function() {
+                console.log('Get Started button clicked - navigating to auth.html#register');
+                window.location.href = 'auth.html#register';
+            });
+        } else {
+            console.error('Get Started button not found!');
+        }
         
         // Login Button Functionality
-        loginBtn.addEventListener('click', function(e) {
-            try {
-                e.preventDefault();
-                // Add click animation
-                this.style.transform = 'scale(0.95)';
-                setTimeout(() => {
-                    this.style.transform = '';
-                    // Navigate to auth page with login tab active
-                    window.location.href = 'auth.html#login';
-                }, 150);
-            } catch (error) {
-                console.error('Error in Login button:', error);
-                // Fallback navigation
-                window.location.href = 'auth.html';
-            }
-        });
+        if (loginBtn) {
+            console.log('Login button found, adding event listener');
+            loginBtn.addEventListener('click', function() {
+                console.log('Login button clicked - navigating to auth.html#login');
+                window.location.href = 'auth.html#login';
+            });
+        } else {
+            console.error('Login button not found!');
+        }
         
         // Try Demo Button Functionality
-        tryDemoBtn.addEventListener('click', function(e) {
-            try {
-                e.preventDefault();
-                // Add click animation
-                this.style.transform = 'scale(0.95)';
-                setTimeout(() => {
-                    this.style.transform = '';
-                    // Create demo modal or redirect to demo section
-                    showDemoModal();
-                }, 150);
-            } catch (error) {
-                console.error('Error in Try Demo button:', error);
-                // Fallback action
-                alert('Demo feature coming soon! Experience our AI-powered career recommendations.');
-            }
-        });
+        if (tryDemoBtn) {
+            console.log('Try Demo button found, adding event listener');
+            tryDemoBtn.addEventListener('click', function() {
+                console.log('Try Demo button clicked - showing demo');
+                alert('🧠 AI Demo: Career Match - Data Scientist (96% match)\n📈 Missing Skills: ML, SQL\n\nSign up to get your full career analysis!');
+            });
+        } else {
+            console.error('Try Demo button not found!');
+        }
     
         // Add smooth scrolling for any anchor links
         try {
