@@ -69,7 +69,7 @@ body {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     line-height: 1.6;
     color: #1f2937;
-    background: linear-gradient(135deg, #6C63FF 0%, #7B5CFA 100%);
+    background: linear-gradient(135deg, #5b52e8 0%, #6d5bfa 100%);
     min-height: 100vh;
 }
 
@@ -174,9 +174,10 @@ body {
 
 .hero-buttons {
     display: flex;
-    gap: 1.5rem;
+    gap: 1.2rem;
     justify-content: center;
     flex-wrap: wrap;
+    align-items: center;
 }
 
 .btn {
@@ -263,8 +264,26 @@ body {
 
 .btn-secondary:hover {
     background: #fff;
-    color: #667eea;
+    color: #5b52e8;
     transform: translateY(-2px);
+}
+
+.btn-demo {
+    background: rgba(255, 255, 255, 0.15);
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50px;
+    backdrop-filter: blur(10px);
+    font-size: 0.9rem;
+    padding: 0.8rem 1.8rem;
+    min-width: 140px;
+}
+
+.btn-demo:hover {
+    background: rgba(255, 255, 255, 0.25);
+    border-color: rgba(255, 255, 255, 0.5);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(255, 255, 255, 0.2);
 }
 
 /* Features Section */
@@ -301,6 +320,7 @@ body {
     gap: 1.8rem;
     max-width: 1200px;
     margin: 0 auto;
+    align-items: stretch;
 }
 
 .feature-card {
@@ -313,9 +333,10 @@ body {
     border: 1px solid #f1f5f9;
     position: relative;
     overflow: hidden;
-    height: 100%;
+    min-height: 280px;
     display: flex;
     flex-direction: column;
+    justify-content: space-between;
 }
 
 .feature-card::before {
@@ -637,12 +658,18 @@ body {
     .hero-buttons {
         flex-direction: column;
         align-items: center;
-        gap: 1rem;
+        gap: 0.8rem;
     }
     
     .btn {
         width: 100%;
         max-width: 280px;
+    }
+    
+    .btn-demo {
+        max-width: 200px;
+        font-size: 0.85rem;
+        padding: 0.7rem 1.5rem;
     }
     
     .features-title {
@@ -724,6 +751,7 @@ body {
     
     .feature-card {
         padding: 1.5rem 1.2rem;
+        min-height: 250px;
     }
     
     .thinking-step {

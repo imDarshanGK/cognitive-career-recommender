@@ -5,8 +5,9 @@ document.addEventListener('DOMContentLoaded', function() {
         // Get button elements with error checking
         const getStartedBtn = document.getElementById('getStartedBtn');
         const loginBtn = document.getElementById('loginBtn');
+        const tryDemoBtn = document.getElementById('tryDemoBtn');
         
-        if (!getStartedBtn || !loginBtn) {
+        if (!getStartedBtn || !loginBtn || !tryDemoBtn) {
             console.warn('Navigation buttons not found');
             return;
         }
@@ -44,6 +45,24 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.error('Error in Login button:', error);
                 // Fallback navigation
                 window.location.href = 'auth.html';
+            }
+        });
+        
+        // Try Demo Button Functionality
+        tryDemoBtn.addEventListener('click', function(e) {
+            try {
+                e.preventDefault();
+                // Add click animation
+                this.style.transform = 'scale(0.95)';
+                setTimeout(() => {
+                    this.style.transform = '';
+                    // Create demo modal or redirect to demo section
+                    showDemoModal();
+                }, 150);
+            } catch (error) {
+                console.error('Error in Try Demo button:', error);
+                // Fallback action
+                alert('Demo feature coming soon! Experience our AI-powered career recommendations.');
             }
         });
     
@@ -122,43 +141,107 @@ document.addEventListener('DOMContentLoaded', function() {
         console.error('Main script initialization failed:', error);
     }
 });
-                entry.target.style.transform = 'translateY(0)';
+
+// Demo Modal Functionality
+function showDemoModal() {
+    try {
+        // Create demo modal
+        const modal = document.createElement('div');
+        modal.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        `;
+        
+        const modalContent = document.createElement('div');
+        modalContent.style.cssText = `
+            background: white;
+            padding: 2rem;
+            border-radius: 15px;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            transform: scale(0.8);
+            transition: transform 0.3s ease;
+        `;
+        
+        modalContent.innerHTML = `
+            <h2 style="color: #6C63FF; margin-bottom: 1rem;">🧠 AI Demo Experience</h2>
+            <p style="color: #6b7280; margin-bottom: 1.5rem;">Experience our AI-powered career recommendations:</p>
+            <div style="text-align: left; margin: 1.5rem 0;">
+                <div style="padding: 1rem; background: #f8fafc; border-radius: 8px; margin-bottom: 1rem;">
+                    <strong>🎯 Career Match:</strong> Data Scientist (96% match)<br>
+                    <span style="color: #6b7280; font-size: 0.9rem;">Based on your Python skills and analytical thinking</span>
+                </div>
+                <div style="padding: 1rem; background: #f8fafc; border-radius: 8px; margin-bottom: 1rem;">
+                    <strong>📈 Skill Gaps:</strong> Machine Learning, SQL<br>
+                    <span style="color: #6b7280; font-size: 0.9rem;">Recommended: Take our ML fundamentals course</span>
+                </div>
+            </div>
+            <button id="closeDemoBtn" style="
+                background: linear-gradient(45deg, #00E5A8, #00C2FF);
+                color: white;
+                border: none;
+                padding: 0.8rem 2rem;
+                border-radius: 25px;
+                cursor: pointer;
+                font-weight: 600;
+                margin-top: 1rem;
+            ">Get Full Experience</button>
+        `;
+        
+        modal.appendChild(modalContent);
+        document.body.appendChild(modal);
+        
+        // Animate modal in
+        setTimeout(() => {
+            modal.style.opacity = '1';
+            modalContent.style.transform = 'scale(1)';
+        }, 10);
+        
+        // Close modal functionality
+        const closeBtn = modalContent.querySelector('#closeDemoBtn');
+        const closeModal = () => {
+            modal.style.opacity = '0';
+            modalContent.style.transform = 'scale(0.8)';
+            setTimeout(() => document.body.removeChild(modal), 300);
+        };
+        
+        closeBtn.addEventListener('click', () => {
+            closeModal();
+            window.location.href = 'auth.html#register';
+        });
+        
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) closeModal();
+        });
+        
+        // Close on Escape key
+        document.addEventListener('keydown', function escHandler(e) {
+            if (e.key === 'Escape') {
+                closeModal();
+                document.removeEventListener('keydown', escHandler);
             }
         });
-    }, observerOptions);
-    
-    // Observe feature cards
-    document.querySelectorAll('.feature-card').forEach(card => {
-        card.style.opacity = '0';
-        card.style.transform = 'translateY(30px)';
-        card.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
-        observer.observe(card);
-    });
-    
-    // Add typing effect to the title (optional enhancement)
-    const title = document.querySelector('.project-title');
-    const titleText = title.textContent;
-    
-    // Uncomment the following lines if you want a typing effect for the title
-    /*
-    title.textContent = '';
-    title.style.borderRight = '3px solid #4ade80';
-    
-    let i = 0;
-    function typeWriter() {
-        if (i < titleText.length) {
-            title.textContent += titleText.charAt(i);
-            i++;
-            setTimeout(typeWriter, 50);
-        } else {
-            title.style.borderRight = 'none';
-        }
+        
+    } catch (error) {
+        console.error('Error showing demo modal:', error);
+        alert('Demo: Get 96% career match as Data Scientist! Sign up to discover your perfect career path.');
     }
-    
-    setTimeout(typeWriter, 1000);
-    */
-    
-    // Console message for developers
-    console.log('🚀 Cognitive Career & Job Recommendation System - Home Page Loaded');
-    console.log('Team AKATSUKI - Intelligent career guidance through Cognitive and Explainable AI');
+}
+
+// Console message for developers
+console.log('🚀 Cognitive Career & Job Recommendation System - Home Page Loaded');
+console.log('Team AKATSUKI - Intelligent career guidance through Cognitive and Explainable AI');
 });
