@@ -169,10 +169,11 @@ body {
 
 .subtitle {
     font-size: 1.4rem;
-    margin-bottom: 3rem;
+    margin-bottom: 2.2rem;
     color: #e0e7ff;
     font-weight: 400;
     animation: fadeInUp 0.8s ease-out 0.6s both;
+    margin-top: -0.5rem;
 }
 
 .hero-buttons {
@@ -242,48 +243,56 @@ body {
 }
 
 .btn-primary {
-    background: linear-gradient(45deg, #6C63FF, #00C2FF);
+    background: linear-gradient(135deg, #6366F1 0%, #00D4AA 100%);
     color: #fff;
-    box-shadow: 0 4px 15px rgba(108, 99, 255, 0.4);
+    box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+    font-weight: 700;
+    font-size: 1.2rem;
+    padding: 1.4rem 3.5rem;
+    min-width: 240px;
+    transform: scale(1.05);
 }
 
 .btn-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(108, 99, 255, 0.6);
+    transform: translateY(-3px) scale(1.07);
+    box-shadow: 0 10px 30px rgba(99, 102, 241, 0.6);
+    background: linear-gradient(135deg, #5B5CE6 0%, #00E5BA 100%);
 }
 
 .btn-secondary {
     background: transparent;
     color: #fff;
-    border: 2px solid #6C63FF;
+    border: 2px solid rgba(99, 102, 241, 0.8);
     border-radius: 50px;
-    box-shadow: inset 0 0 0 2px #6C63FF;
+    backdrop-filter: blur(10px);
+    font-weight: 600;
 }
 
 .btn-secondary:hover {
-    background: #6C63FF;
+    background: rgba(99, 102, 241, 0.9);
     color: #fff;
     transform: translateY(-2px);
-    box-shadow: 0 4px 15px rgba(108, 99, 255, 0.4);
+    box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+    border-color: #6366F1;
 }
 
 .btn-demo {
     background: transparent;
-    color: rgba(255, 255, 255, 0.8);
-    border: none;
+    color: rgba(255, 255, 255, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 50px;
-    font-size: 0.85rem;
-    padding: 0.7rem 1.5rem;
-    min-width: 120px;
+    font-size: 0.9rem;
+    padding: 0.8rem 1.8rem;
+    min-width: 140px;
     font-weight: 500;
-    text-decoration: underline;
-    text-underline-offset: 4px;
-    text-decoration-color: rgba(255, 255, 255, 0.3);
+    backdrop-filter: blur(5px);
+    transition: all 0.2s ease;
 }
 
 .btn-demo:hover {
-    color: #fff;
-    text-decoration-color: rgba(255, 255, 255, 0.8);
+    color: rgba(0, 212, 170, 1);
+    border-color: rgba(0, 212, 170, 0.5);
+    background: rgba(255, 255, 255, 0.1);
     transform: translateY(-1px);
 }
 
@@ -334,7 +343,7 @@ body {
     border: 1px solid #f1f5f9;
     position: relative;
     overflow: hidden;
-    min-height: 280px;
+    min-height: 300px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
@@ -364,7 +373,7 @@ body {
 .feature-icon {
     width: 70px;
     height: 70px;
-    background: linear-gradient(45deg, #6C63FF, #7B5CFA);
+    background: linear-gradient(135deg, #6366F1, #00D4AA);
     border-radius: 50%;
     display: flex;
     align-items: center;
