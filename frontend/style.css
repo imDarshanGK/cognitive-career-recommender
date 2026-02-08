@@ -247,14 +247,13 @@ body {
     color: #fff;
     box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
     font-weight: 700;
-    font-size: 1.3rem;
-    padding: 1.6rem 4rem;
-    min-width: 280px;
-    transform: scale(1.1);
+    font-size: 1.1rem;
+    padding: 1.2rem 2.5rem;
+    min-width: 200px;
 }
 
 .btn-primary:hover {
-    transform: translateY(-3px) scale(1.12);
+    transform: translateY(-3px);
     box-shadow: 0 10px 30px rgba(99, 102, 241, 0.6);
     background: linear-gradient(135deg, #5B5CE6 0%, #00E5BA 100%);
 }
@@ -266,9 +265,9 @@ body {
     border-radius: 50px;
     backdrop-filter: blur(10px);
     font-weight: 600;
-    font-size: 1.05rem;
-    padding: 1.1rem 2.8rem;
-    min-width: 180px;
+    font-size: 1.1rem;
+    padding: 1.2rem 2.5rem;
+    min-width: 200px;
 }
 
 .btn-secondary:hover {
@@ -284,9 +283,9 @@ body {
     color: rgba(255, 255, 255, 0.7);
     border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 50px;
-    font-size: 0.85rem;
-    padding: 0.7rem 1.5rem;
-    min-width: 120px;
+    font-size: 1.1rem;
+    padding: 1.2rem 2.5rem;
+    min-width: 200px;
     font-weight: 500;
     backdrop-filter: blur(5px);
     transition: all 0.2s ease;
