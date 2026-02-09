@@ -1,27 +1,36 @@
 // Wait for DOM to be fully loaded
 document.addEventListener('DOMContentLoaded', function() {
     
-    // Check for hash in URL and activate appropriate tab
-    function handleInitialTab() {
-        const hash = window.location.hash.substring(1); // Remove the # symbol
-        if (hash === 'register' || hash === 'login') {
-            // Remove active class from all tabs and forms
-            const tabBtns = document.querySelectorAll('.tab-btn');
-            const formWrappers = document.querySelectorAll('.form-wrapper');
-            
-            tabBtns.forEach(tab => tab.classList.remove('active'));
-            formWrappers.forEach(wrapper => wrapper.classList.remove('active'));
-            
-            // Activate the correct tab
-            const targetTab = document.querySelector(`[data-tab="${hash}"]`);
-            const targetForm = document.getElementById(hash + '-form');
-            
-            if (targetTab && targetForm) {
-                targetTab.classList.add('active');
-                targetForm.classList.add('active');
+    try {
+        // Check for hash in URL and activate appropriate tab
+        function handleInitialTab() {
+            try {
+                const hash = window.location.hash.substring(1); // Remove the # symbol
+                if (hash === 'register' || hash === 'login') {
+                    // Remove active class from all tabs and forms
+                    const tabBtns = document.querySelectorAll('.tab-btn');
+                    const formWrappers = document.querySelectorAll('.form-wrapper');
+                    
+                    if (tabBtns.length === 0 || formWrappers.length === 0) {
+                        return;
+                    }
+                    
+                    tabBtns.forEach(tab => tab.classList.remove('active'));
+                    formWrappers.forEach(wrapper => wrapper.classList.remove('active'));
+                    
+                    // Activate the correct tab
+                    const targetTab = document.querySelector(`[data-tab="${hash}"]`);
+                    const targetForm = document.getElementById(hash + '-form');
+                    
+                    if (targetTab && targetForm) {
+                        targetTab.classList.add('active');
+                        targetForm.classList.add('active');
+                    }
+                }
+            } catch (error) {
+                // Silent error handling
             }
         }
-    }
     
     // Handle initial tab on page load
     handleInitialTab();
@@ -106,8 +115,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function getStrengthText(score) {
-        const strengthLevels = ['Very Weak', 'Weak', 'Fair', 'Good', 'Strong'];
-        return strengthLevels[score] || 'Very Weak';
+        const strengthLevels = ['Very Weak 🔴', 'Weak 🔴', 'Medium 🟡', 'Good 🟢', 'Strong 🟢'];
+        return strengthLevels[score] || 'Very Weak 🔴';
     }
     
     function updatePasswordStrength(strength) {
@@ -115,39 +124,95 @@ document.addEventListener('DOMContentLoaded', function() {
             strengthBar.style.width = strength.percentage + '%';
             strengthText.textContent = strength.text;
             
-            // Update color based on strength
-            const colors = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#16a34a'];
-            strengthBar.style.background = colors[strength.score] || '#ef4444';
+            // Remove existing classes
+            strengthBar.classList.remove('weak', 'medium', 'strong');
+            
+            // Add appropriate class based on strength
+            if (strength.score <= 2) {
+                strengthBar.classList.add('weak');
+            } else if (strength.score <= 3) {
+                strengthBar.classList.add('medium');
+            } else {
+                strengthBar.classList.add('strong');
+            }
         }
     }
     
-    // Form validation
+    // Enhanced form validation
     function validateEmail(email) {
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        return emailRegex.test(email);
+        // More comprehensive email validation
+        const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
+        return emailRegex.test(email) && email.length <= 254;
     }
     
     function validatePassword(password) {
-        return password.length >= 8;
+        // Enhanced password validation
+        const minLength = 8;
+        const hasUpperCase = /[A-Z]/.test(password);
+        const hasLowerCase = /[a-z]/.test(password);
+        const hasNumbers = /\d/.test(password);
+        const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+        
+        return {
+            isValid: password.length >= minLength && hasUpperCase && hasLowerCase && hasNumbers,
+            errors: [
+                password.length < minLength ? `Password must be at least ${minLength} characters` : null,
+                !hasUpperCase ? 'Password must contain at least one uppercase letter' : null,
+                !hasLowerCase ? 'Password must contain at least one lowercase letter' : null,
+                !hasNumbers ? 'Password must contain at least one number' : null
+            ].filter(Boolean)
+        };
     }
     
     function validateName(name) {
-        return name.length >= 2;
+        const nameRegex = /^[a-zA-Z\s]+$/;
+        return {
+            isValid: name.length >= 2 && name.length <= 50 && nameRegex.test(name),
+            errors: [
+                name.length < 2 ? 'Name must be at least 2 characters' : null,
+                name.length > 50 ? 'Name must be less than 50 characters' : null,
+                !nameRegex.test(name) ? 'Name can only contain letters and spaces' : null
+            ].filter(Boolean)
+        };
     }
     
-    function showError(fieldId, message) {
-        const errorElement = document.getElementById(fieldId + 'Error');
-        if (errorElement) {
-            errorElement.textContent = message;
-            errorElement.style.display = 'block';
+    function showError(fieldId, messages) {
+        try {
+            const errorElement = document.getElementById(fieldId + 'Error');
+            if (errorElement) {
+                // Handle both string and array of messages
+                const errorText = Array.isArray(messages) ? messages.join('. ') : messages;
+                errorElement.textContent = errorText;
+                errorElement.style.display = 'block';
+                errorElement.setAttribute('role', 'alert');
+                
+                // Add error styling to input
+                const inputElement = document.getElementById(fieldId);
+                if (inputElement) {
+                    inputElement.classList.add('error');
+                    inputElement.setAttribute('aria-invalid', 'true');
+                    inputElement.setAttribute('aria-describedby', fieldId + 'Error');
+                }
+            }
+        } catch (error) {
+            // Silent error handling
         }
     }
     
     function clearError(fieldId) {
         const errorElement = document.getElementById(fieldId + 'Error');
         if (errorElement) {
-            errorElement.textContent = '';
             errorElement.style.display = 'none';
+            errorElement.textContent = '';
+            errorElement.removeAttribute('role');
+            
+            // Remove error styling from input
+            const inputElement = document.getElementById(fieldId);
+            if (inputElement) {
+                inputElement.classList.remove('error');
+                inputElement.setAttribute('aria-invalid', 'false');
+                inputElement.removeAttribute('aria-describedby');
+            }
         }
     }
     
@@ -307,28 +372,63 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 2000);
     }
     
-    // Real-time input validation feedback
+    // Enhanced real-time input validation feedback
     const inputs = document.querySelectorAll('input[type="email"], input[type="password"], input[type="text"]');
     
     inputs.forEach(input => {
         input.addEventListener('blur', function() {
             const value = this.value.trim();
-            const fieldId = this.id.replace(/^(login|register)/, '').toLowerCase();
             
-            if (this.type === 'email' && value && !validateEmail(value)) {
-                showError(this.id, 'Please enter a valid email address');
-            } else if (this.type === 'password' && value && !validatePassword(value)) {
-                showError(this.id, 'Password must be at least 8 characters long');
-            } else if (this.type === 'text' && value && !validateName(value)) {
-                showError(this.id, 'This field must be at least 2 characters long');
-            } else {
+            if (!value) {
                 clearError(this.id);
+                return;
+            }
+            
+            let validation;
+            
+            if (this.type === 'email') {
+                if (!validateEmail(value)) {
+                    showError(this.id, 'Please enter a valid email address');
+                } else {
+                    clearError(this.id);
+                }
+            } else if (this.type === 'password') {
+                validation = validatePassword(value);
+                if (!validation.isValid) {
+                    showError(this.id, validation.errors);
+                } else {
+                    clearError(this.id);
+                }
+            } else if (this.type === 'text' && (this.id.includes('name') || this.id.includes('Name'))) {
+                validation = validateName(value);
+                if (!validation.isValid) {
+                    showError(this.id, validation.errors);
+                } else {
+                    clearError(this.id);
+                }
             }
         });
         
-        // Clear errors on input
+        // Clear errors on input and provide immediate feedback for passwords
         input.addEventListener('input', function() {
             clearError(this.id);
+            
+            // Real-time password strength feedback
+            if (this.type === 'password' && this.value) {
+                const validation = validatePassword(this.value);
+                if (validation.errors.length === 0) {
+                    this.classList.add('valid');
+                } else {
+                    this.classList.remove('valid');
+                }
+            }
+        });
+        
+        // Add ARIA labels for better accessibility
+        input.addEventListener('focus', function() {
+            if (this.type === 'password') {
+                this.setAttribute('aria-describedby', this.id + 'Help ' + this.id + 'Error');
+            }
         });
     });
     
@@ -347,8 +447,4 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize animations
     animateShapes();
     
-    // Console welcome message
-    console.log('🔐 Authentication System Loaded');
-    console.log('Features: Login, Registration, Guest Access, Social Auth');
-    console.log('Team AKATSUKI - Cognitive Career & Job Recommendation System');
 });
