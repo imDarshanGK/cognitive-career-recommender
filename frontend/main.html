@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CareerAI - Smart Career Guidance Platform</title>
+    
+    <!-- Meta Tags for SEO -->
+    <meta name="description" content="AI-powered career guidance platform providing personalized recommendations, resume analysis, and skill assessments">
+    <meta name="keywords" content="career guidance, AI recommendations, resume analysis, skill assessment, job search">
+    <meta name="author" content="CareerAI Team">
+    
+    <!-- Open Graph Tags -->
+    <meta property="og:title" content="CareerAI - Smart Career Guidance">
+    <meta property="og:description" content="Discover your ideal career path with AI-powered insights and personalized recommendations">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://careerai.com">
+    
+    <!-- Bootstrap 5.3 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Custom Animations CSS -->
+    <link href="../static/css/animations.css" rel="stylesheet">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" sizes="32x32" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%23007bff' rx='6'/><text x='16' y='22' text-anchor='middle' fill='white' font-size='18' font-family='Arial'>🧠</text></svg>">
+    
+    <!-- Custom Styles -->
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            --success-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            --warning-gradient: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+            --danger-gradient: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+            --dark-gradient: linear-gradient(135deg, #434343 0%, #000000 100%);
+            
+            --border-radius: 12px;
+            --box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f8f9fa;
+            overflow-x: hidden;
+        }
+        
+        /* Page Layout */
+        .page-wrapper {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding-top: 80px; /* Account for fixed navbar */
+        }
+        
+        .main-content {
+            flex: 1;
+            padding: 2rem 0;
+        }
+        
+        /* Loading Screen */
+        .loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--primary-gradient);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
+        
+        .loading-screen.hidden {
+            opacity: 0;
+            visibility: hidden;
+        }
+        
+        .loading-logo {
+            font-size: 4rem;
+            color: white;
+            margin-bottom: 2rem;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+        
+        .loading-text {
+            color: white;
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
+        }
+        
+        .loading-progress {
+            width: 300px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        
+        .loading-bar {
+            height: 100%;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 2px;
+            animation: loadingProgress 2s ease-in-out;
+        }
+        
+        @keyframes loadingProgress {
+            0% { width: 0; }
+            100% { width: 100%; }
+        }
+        
+        /* Page Transitions */
+        .page-transition {
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeInUp 0.8s ease forwards;
+        }
+        
+        /* Scroll Indicator */
+        .scroll-indicator {
+            position: fixed;
+            top: 80px;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+        }
+        
+        .scroll-progress {
+            height: 100%;
+            background: var(--primary-gradient);
+            transition: width 0.1s ease;
+            width: 0%;
+        }
+        
+        /* Content Sections */
+        .content-section {
+            margin-bottom: 3rem;
+            animation: fadeInUp 0.8s ease;
+        }
+        
+        .content-section.hidden {
+            display: none;
+        }
+        
+        .section-header {
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+        
+        .section-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 1rem;
+        }
+        
+        .section-subtitle {
+            font-size: 1.1rem;
+            color: #6c757d;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        /* Quick Actions */
+        .quick-actions {
+            position: fixed;
+            top: 50%;
+            right: 2rem;
+            transform: translateY(-50%);
+            z-index: 1040;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .quick-action-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: none;
+            color: white;
+            font-size: 1.2rem;
+            transition: var(--transition);
+            box-shadow: var(--box-shadow);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .quick-action-btn.primary {
+            background: var(--primary-gradient);
+        }
+        
+        .quick-action-btn.success {
+            background: var(--success-gradient);
+        }
+        
+        .quick-action-btn.warning {
+            background: var(--warning-gradient);
+        }
+        
+        .quick-action-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
+        }
+        
+        .quick-action-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: left 0.5s ease;
+        }
+        
+        .quick-action-btn:hover::before {
+            left: 100%;
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 1200px) {
+            .quick-actions {
+                right: 1rem;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .page-wrapper {
+                padding-top: 70px;
+            }
+            
+            .section-title {
+                font-size: 2rem;
+            }
+            
+            .quick-actions {
+                position: relative;
+                top: auto;
+                right: auto;
+                transform: none;
+                flex-direction: row;
+                justify-content: center;
+                margin: 2rem 0;
+            }
+            
+            .quick-action-btn {
+                width: 45px;
+                height: 45px;
+                font-size: 1rem;
+            }
+        }
+        
+        /* Accessibility */
+        @media (prefers-reduced-motion: reduce) {
+            *,
+            *::before,
+            *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+        
+        /* Focus styles for accessibility */
+        .quick-action-btn:focus,
+        .btn:focus,
+        .form-control:focus {
+            outline: 2px solid #0066cc;
+            outline-offset: 2px;
+        }
+        
+        /* High contrast mode support */
+        @media (prefers-contrast: high) {
+            .section-title {
+                -webkit-text-fill-color: initial;
+                color: #000;
+            }
+        }
+        
+        /* Print styles */
+        @media print {
+            .navbar,
+            .footer,
+            .quick-actions,
+            .floating-actions {
+                display: none !important;
+            }
+            
+            .page-wrapper {
+                padding-top: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div class="loading-screen" id="loadingScreen">
+        <div class="loading-logo">
+            <i class="fas fa-brain"></i>
+        </div>
+        <div class="loading-text">Initializing CareerAI...</div>
+        <div class="loading-progress">
+            <div class="loading-bar"></div>
+        </div>
+    </div>
+    
+    <!-- Scroll Progress Indicator -->
+    <div class="scroll-indicator">
+        <div class="scroll-progress" id="scrollProgress"></div>
+    </div>
+    
+    <!-- Navigation Component -->
+    <div id="navigation-component">
+        <!-- Navigation content will be loaded here -->
+    </div>
+    
+    <!-- Page Wrapper -->
+    <div class="page-wrapper">
+        <!-- Main Content -->
+        <main class="main-content page-transition">
+            <div class="container">
+                <!-- Welcome Section -->
+                <div class="content-section" id="dashboard">
+                    <div class="section-header">
+                        <h1 class="section-title">Welcome to CareerAI</h1>
+                        <p class="section-subtitle">
+                            Your intelligent career companion, powered by advanced AI to guide you 
+                            towards your dream career with personalized insights and recommendations.
+                        </p>
+                    </div>
+                    
+                    <!-- Dashboard Content -->
+                    <div id="dashboard-content">
+                        <!-- Dashboard content will be loaded here -->
+                    </div>
+                </div>
+                
+                <!-- Analysis Section -->
+                <div class="content-section hidden" id="analysis">
+                    <div class="section-header">
+                        <h2 class="section-title">Career Analysis</h2>
+                        <p class="section-subtitle">
+                            Deep insights into your professional profile, skills assessment, 
+                            and career advancement opportunities.
+                        </p>
+                    </div>
+                    
+                    <!-- Analysis content would go here -->
+                    <div class="row">
+                        <div class="col-lg-6 mb-4">
+                            <div class="card h-100 shadow-sm">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-chart-line fa-3x text-primary mb-3"></i>
+                                    <h5>Skills Analysis</h5>
+                                    <p class="text-muted">Comprehensive evaluation of your technical and soft skills</p>
+                                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#skillsAssessmentModal">
+                                        Start Analysis
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-6 mb-4">
+                            <div class="card h-100 shadow-sm">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-file-alt fa-3x text-success mb-3"></i>
+                                    <h5>Resume Review</h5>
+                                    <p class="text-muted">AI-powered analysis of your resume and recommendations</p>
+                                    <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#fileUploadModal">
+                                        Upload Resume
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Recommendations Section -->
+                <div class="content-section hidden" id="recommendations">
+                    <div class="section-header">
+                        <h2 class="section-title">Career Recommendations</h2>
+                        <p class="section-subtitle">
+                            Personalized career paths and opportunities based on your skills, 
+                            experience, and aspirations.
+                        </p>
+                    </div>
+                    
+                    <!-- Recommendations would be loaded dynamically -->
+                    <div class="text-center py-5">
+                        <i class="fas fa-star fa-3x text-warning mb-3"></i>
+                        <h4>No Recommendations Yet</h4>
+                        <p class="text-muted">Complete your profile assessment to receive personalized recommendations</p>
+                        <button class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#skillsAssessmentModal">
+                            Get Started
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Learning Path Section -->
+                <div class="content-section hidden" id="learning">
+                    <div class="section-header">
+                        <h2 class="section-title">Learning Path</h2>
+                        <p class="section-subtitle">
+                            Curated learning resources and skill development programs 
+                            to advance your career.
+                        </p>
+                    </div>
+                    
+                    <!-- Learning content would go here -->
+                    <div class="text-center py-5">
+                        <i class="fas fa-book-reader fa-3x text-info mb-3"></i>
+                        <h4>Personalized Learning Coming Soon</h4>
+                        <p class="text-muted">We're preparing customized learning paths based on your career goals</p>
+                    </div>
+                </div>
+                
+                <!-- Profile Section -->
+                <div class="content-section hidden" id="profile">
+                    <div class="section-header">
+                        <h2 class="section-title">My Profile</h2>
+                        <p class="section-subtitle">
+                            Manage your professional information, preferences, and privacy settings.
+                        </p>
+                    </div>
+                    
+                    <!-- Profile content would go here -->
+                    <div class="row">
+                        <div class="col-lg-4">
+                            <div class="card text-center">
+                                <div class="card-body">
+                                    <img src="https://ui-avatars.com/api/?name=John+Doe&background=007bff&color=fff&size=128" 
+                                         alt="Profile Picture" class="rounded-circle mb-3">
+                                    <h5>John Doe</h5>
+                                    <p class="text-muted">Software Developer</p>
+                                    <button class="btn btn-outline-primary">Edit Profile</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-8">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h6>Profile Completion</h6>
+                                    <div class="progress mb-3">
+                                        <div class="progress-bar" style="width: 65%">65%</div>
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">First Name</label>
+                                            <input type="text" class="form-control" value="John" readonly>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Last Name</label>
+                                            <input type="text" class="form-control" value="Doe" readonly>
+                                        </div>
+                                        <div class="col-12 mb-3">
+                                            <label class="form-label">Email</label>
+                                            <input type="email" class="form-control" value="john.doe@example.com" readonly>
+                                        </div>
+                                        <div class="col-12 mb-3">
+                                            <label class="form-label">Current Position</label>
+                                            <input type="text" class="form-control" value="Software Developer" readonly>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Settings Section -->
+                <div class="content-section hidden" id="settings">
+                    <div class="section-header">
+                        <h2 class="section-title">Settings</h2>
+                        <p class="section-subtitle">
+                            Customize your CareerAI experience, notifications, and privacy preferences.
+                        </p>
+                    </div>
+                    
+                    <!-- Settings content would go here -->
+                    <div class="row">
+                        <div class="col-lg-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6><i class="fas fa-bell me-2"></i>Notifications</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="form-check form-switch mb-3">
+                                        <input class="form-check-input" type="checkbox" id="emailNotifications" checked>
+                                        <label class="form-check-label" for="emailNotifications">
+                                            Email Notifications
+                                        </label>
+                                    </div>
+                                    <div class="form-check form-switch mb-3">
+                                        <input class="form-check-input" type="checkbox" id="careerUpdates" checked>
+                                        <label class="form-check-label" for="careerUpdates">
+                                            Career Updates
+                                        </label>
+                                    </div>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="weeklyReports">
+                                        <label class="form-check-label" for="weeklyReports">
+                                            Weekly Reports
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6><i class="fas fa-shield-alt me-2"></i>Privacy</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="form-check form-switch mb-3">
+                                        <input class="form-check-input" type="checkbox" id="profileVisible" checked>
+                                        <label class="form-check-label" for="profileVisible">
+                                            Profile Visible to Recruiters
+                                        </label>
+                                    </div>
+                                    <div class="form-check form-switch mb-3">
+                                        <input class="form-check-input" type="checkbox" id="dataSharing">
+                                        <label class="form-check-label" for="dataSharing">
+                                            Anonymous Data Sharing
+                                        </label>
+                                    </div>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="marketingEmails">
+                                        <label class="form-check-label" for="marketingEmails">
+                                            Marketing Emails
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <!-- Quick Actions (Right Side) -->
+    <div class="quick-actions d-none d-lg-flex">
+        <button class="quick-action-btn primary" data-bs-toggle="modal" data-bs-target="#fileUploadModal" 
+                data-bs-toggle="tooltip" data-bs-placement="left" title="Upload Resume">
+            <i class="fas fa-upload"></i>
+        </button>
+        <button class="quick-action-btn success" data-bs-toggle="modal" data-bs-target="#careerExplorationModal"
+                data-bs-toggle="tooltip" data-bs-placement="left" title="Explore Careers">
+            <i class="fas fa-compass"></i>
+        </button>
+        <button class="quick-action-btn warning" data-bs-toggle="modal" data-bs-target="#skillsAssessmentModal"
+                data-bs-toggle="tooltip" data-bs-placement="left" title="Skills Assessment">
+            <i class="fas fa-graduation-cap"></i>
+        </button>
+    </div>
+    
+    <!-- Modals Component -->
+    <div id="modals-component">
+        <!-- Modal content will be loaded here -->
+    </div>
+    
+    <!-- Footer Component -->
+    <div id="footer-component">
+        <!-- Footer content will be loaded here -->
+    </div>
+    
+    <!-- Bootstrap 5.3 JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Custom JavaScript -->
+    <script src="../static/js/dashboard.js"></script>
+    
+    <!-- Main Application Script -->
+    <script>
+        // Main application initialization
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize loading screen
+            initializeLoadingScreen();
+            
+            // Load components
+            loadComponents();
+            
+            // Initialize scroll progress
+            initializeScrollProgress();
+            
+            // Initialize section navigation
+            initializeSectionNavigation();
+            
+            // Initialize tooltips
+            initializeTooltips();
+            
+            // Initialize accessibility features
+            initializeAccessibility();
+        });
+        
+        // Loading screen management
+        function initializeLoadingScreen() {
+            const loadingScreen = document.getElementById('loadingScreen');
+            
+            // Simulate loading time
+            setTimeout(() => {
+                loadingScreen.classList.add('hidden');
+                
+                // Remove from DOM after animation
+                setTimeout(() => {
+                    loadingScreen.remove();
+                }, 500);
+            }, 2000);
+        }
+        
+        // Component loading
+        async function loadComponents() {
+            try {
+                // Load navigation
+                const navResponse = await fetch('../templates/components/navigation.html');
+                const navHtml = await navResponse.text();
+                document.getElementById('navigation-component').innerHTML = navHtml;
+                
+                // Load dashboard
+                const dashResponse = await fetch('../templates/dashboard/index.html');
+                const dashHtml = await dashResponse.text();
+                document.getElementById('dashboard-content').innerHTML = dashHtml;
+                
+                // Load modals
+                const modalResponse = await fetch('../templates/components/modals.html');
+                const modalHtml = await modalResponse.text();
+                document.getElementById('modals-component').innerHTML = modalHtml;
+                
+                // Load footer
+                const footerResponse = await fetch('../templates/components/footer.html');
+                const footerHtml = await footerResponse.text();
+                document.getElementById('footer-component').innerHTML = footerHtml;
+                
+                // Execute component scripts
+                executeComponentScripts();
+                
+            } catch (error) {
+                console.warn('Some components could not be loaded:', error);
+                // Fallback to showing content without external components
+                showFallbackContent();
+            }
+        }
+        
+        // Execute scripts within loaded components
+        function executeComponentScripts() {
+            const scriptElements = document.querySelectorAll('script');
+            scriptElements.forEach(script => {
+                if (script.innerHTML && !script.hasAttribute('executed')) {
+                    script.setAttribute('executed', 'true');
+                    const newScript = document.createElement('script');
+                    newScript.innerHTML = script.innerHTML;
+                    document.body.appendChild(newScript);
+                }
+            });
+        }
+        
+        // Fallback content for when components can't be loaded
+        function showFallbackContent() {
+            // Simple fallback navigation
+            const navComponent = document.getElementById('navigation-component');
+            navComponent.innerHTML = `
+                <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+                    <div class="container">
+                        <a class="navbar-brand" href="#">CareerAI</a>
+                    </div>
+                </nav>
+            `;
+            
+            // Simple fallback footer
+            const footerComponent = document.getElementById('footer-component');
+            footerComponent.innerHTML = `
+                <footer class="bg-dark text-white text-center py-3">
+                    <p>&copy; 2024 CareerAI. All rights reserved.</p>
+                </footer>
+            `;
+        }
+        
+        // Scroll progress indicator
+        function initializeScrollProgress() {
+            const scrollProgress = document.getElementById('scrollProgress');
+            
+            if (scrollProgress) {
+                window.addEventListener('scroll', () => {
+                    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+                    const scrollHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+                    const progress = (scrollTop / scrollHeight) * 100;
+                    
+                    scrollProgress.style.width = progress + '%';
+                });
+            }
+        }
+        
+        // Section navigation
+        function initializeSectionNavigation() {
+            // Handle navigation link clicks
+            document.addEventListener('click', (e) => {
+                const link = e.target.closest('[data-section]');
+                if (link) {
+                    e.preventDefault();
+                    const sectionId = link.getAttribute('data-section');
+                    showSection(sectionId);
+                }
+            });
+        }
+        
+        // Show specific section
+        function showSection(sectionId) {
+            // Hide all sections
+            const sections = document.querySelectorAll('.content-section');
+            sections.forEach(section => {
+                section.classList.add('hidden');
+            });
+            
+            // Show target section
+            const targetSection = document.getElementById(sectionId);
+            if (targetSection) {
+                targetSection.classList.remove('hidden');
+                
+                // Update page title
+                updatePageTitle(sectionId);
+                
+                // Scroll to top of section
+                targetSection.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+        
+        // Update page title based on section
+        function updatePageTitle(sectionId) {
+            const titles = {
+                'dashboard': 'Dashboard - CareerAI',
+                'analysis': 'Career Analysis - CareerAI',
+                'recommendations': 'Recommendations - CareerAI',
+                'learning': 'Learning Path - CareerAI',
+                'profile': 'My Profile - CareerAI',
+                'settings': 'Settings - CareerAI'
+            };
+            
+            document.title = titles[sectionId] || 'CareerAI - Smart Career Guidance';
+        }
+        
+        // Initialize tooltips
+        function initializeTooltips() {
+            const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            if (window.bootstrap) {
+                tooltipTriggerList.map(function(tooltipTriggerEl) {
+                    return new bootstrap.Tooltip(tooltipTriggerEl);
+                });
+            }
+        }
+        
+        // Initialize accessibility features
+        function initializeAccessibility() {
+            // Keyboard navigation
+            document.addEventListener('keydown', (e) => {
+                // Alt + Number keys for quick section navigation
+                if (e.altKey && e.key >= '1' && e.key <= '6') {
+                    e.preventDefault();
+                    const sections = ['dashboard', 'analysis', 'recommendations', 'learning', 'profile', 'settings'];
+                    const sectionIndex = parseInt(e.key) - 1;
+                    if (sections[sectionIndex]) {
+                        showSection(sections[sectionIndex]);
+                    }
+                }
+            });
+            
+            // Focus management for modals
+            document.addEventListener('shown.bs.modal', (e) => {
+                const modal = e.target;
+                const firstFocusable = modal.querySelector('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+                if (firstFocusable) {
+                    firstFocusable.focus();
+                }
+            });
+            
+            // Announce section changes for screen readers
+            const announcer = document.createElement('div');
+            announcer.setAttribute('aria-live', 'polite');
+            announcer.setAttribute('aria-atomic', 'true');
+            announcer.className = 'sr-only';
+            document.body.appendChild(announcer);
+            
+            // Function to announce section changes
+            window.announceSection = function(sectionName) {
+                announcer.textContent = `Navigated to ${sectionName} section`;
+            };
+        }
+        
+        // Global error handling
+        window.addEventListener('error', (e) => {
+            console.error('Application error:', e.error);
+            // You could show a user-friendly error message here
+        });
+        
+        // Unhandled promise rejection handling
+        window.addEventListener('unhandledrejection', (e) => {
+            console.error('Unhandled promise rejection:', e.reason);
+            e.preventDefault();
+        });
+    </script>
+</body>
+</html>

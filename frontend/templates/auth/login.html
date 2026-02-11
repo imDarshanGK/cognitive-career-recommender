@@ -1,0 +1,228 @@
+{% extends "layout/auth_base.html" %}
+
+{% block title %}Login - Cognitive Career AI{% endblock %}
+
+{% block auth_title %}Welcome Back{% endblock %}
+{% block auth_subtitle %}Sign in to your AI career recommendation account{% endblock %}
+
+{% block auth_content %}
+<form method="POST" id="loginForm" novalidate>
+    {{ csrf_token() }}
+    
+    <!-- Email Field -->
+    <div class="mb-3">
+        <label for="email" class="form-label">
+            <i class="fas fa-envelope me-1"></i>Email Address
+        </label>
+        <input type="email" 
+               class="form-control form-control-lg" 
+               id="email" 
+               name="email" 
+               placeholder="Enter your email"
+               value="{{ request.form.email }}"
+               required>
+        <div class="invalid-feedback" id="email-error"></div>
+    </div>
+    
+    <!-- Password Field -->
+    <div class="mb-3">
+        <label for="password" class="form-label">
+            <i class="fas fa-lock me-1"></i>Password
+        </label>
+        <div class="input-group">
+            <input type="password" 
+                   class="form-control form-control-lg" 
+                   id="password" 
+                   name="password" 
+                   placeholder="Enter your password"
+                   required>
+            <button type="button" class="btn btn-outline-secondary" id="togglePassword">
+                <i class="fas fa-eye"></i>
+            </button>
+        </div>
+        <div class="invalid-feedback" id="password-error"></div>
+    </div>
+    
+    <!-- Remember Me & Forgot Password -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="remember_me" name="remember_me">
+            <label class="form-check-label" for="remember_me">
+                Remember me
+            </label>
+        </div>
+        <a href="{{ url_for('auth.forgot_password') }}" class="text-decoration-none">
+            Forgot password?
+        </a>
+    </div>
+    
+    <!-- Login Button -->
+    <button type="submit" class="btn btn-primary btn-lg w-100 mb-3" id="loginBtn">
+        <span class="btn-text">
+            <i class="fas fa-sign-in-alt me-2"></i>Sign In
+        </span>
+        <span class="btn-loading d-none">
+            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+            Signing In...
+        </span>
+    </button>
+    
+    <!-- Divider -->
+    <div class="divider my-4">
+        <span class="divider-text">or continue with</span>
+    </div>
+    
+    <!-- Social Login Options -->
+    <div class="row g-2">
+        <div class="col-6">
+            <button type="button" class="btn btn-outline-secondary w-100">
+                <i class="fab fa-google me-2"></i>Google
+            </button>
+        </div>
+        <div class="col-6">
+            <button type="button" class="btn btn-outline-secondary w-100">
+                <i class="fab fa-linkedin me-2"></i>LinkedIn
+            </button>
+        </div>
+    </div>
+</form>
+{% endblock %}
+
+{% block auth_footer %}
+<div class="text-center">
+    <p class="text-muted mb-0">
+        Don't have an account? 
+        <a href="{{ url_for('auth.register') }}" class="text-decoration-none fw-semibold">
+            Create one here
+        </a>
+    </p>
+</div>
+{% endblock %}
+
+{% block auth_links %}
+<div class="small text-muted">
+    <a href="{{ url_for('main.privacy') }}" class="text-decoration-none me-3">Privacy Policy</a>
+    <a href="{{ url_for('main.terms') }}" class="text-decoration-none me-3">Terms of Service</a>
+    <a href="{{ url_for('main.support') }}" class="text-decoration-none">Support</a>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('loginForm');
+    const loginBtn = document.getElementById('loginBtn');
+    const togglePassword = document.getElementById('togglePassword');
+    const passwordField = document.getElementById('password');
+    
+    // Password visibility toggle
+    togglePassword.addEventListener('click', function() {
+        const type = passwordField.getAttribute('type') === 'password' ? 'text' : 'password';
+        passwordField.setAttribute('type', type);
+        this.innerHTML = type === 'password' ? '<i class="fas fa-eye"></i>' : '<i class="fas fa-eye-slash"></i>';
+    });
+    
+    // Form submission
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // Clear previous errors
+        clearErrors();
+        
+        // Show loading state
+        setLoadingState(true);
+        
+        // Get form data
+        const formData = new FormData(form);
+        
+        // Submit via AJAX
+        fetch('{{ url_for("auth.login") }}', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Show success message
+                showAlert('success', 'Login successful! Redirecting...');
+                
+                // Redirect after short delay
+                setTimeout(() => {
+                    window.location.href = data.redirect_url || '{{ url_for("main.dashboard") }}';
+                }, 1000);
+            } else {
+                // Show errors
+                if (data.errors) {
+                    showErrors(data.errors);
+                } else {
+                    showAlert('error', data.message || 'Login failed. Please try again.');
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showAlert('error', 'Network error. Please check your connection and try again.');
+        })
+        .finally(() => {
+            setLoadingState(false);
+        });
+    });
+    
+    function setLoadingState(loading) {
+        const btnText = loginBtn.querySelector('.btn-text');
+        const btnLoading = loginBtn.querySelector('.btn-loading');
+        
+        if (loading) {
+            btnText.classList.add('d-none');
+            btnLoading.classList.remove('d-none');
+            loginBtn.disabled = true;
+        } else {
+            btnText.classList.remove('d-none');
+            btnLoading.classList.add('d-none');
+            loginBtn.disabled = false;
+        }
+    }
+    
+    function clearErrors() {
+        document.querySelectorAll('.is-invalid').forEach(input => {
+            input.classList.remove('is-invalid');
+        });
+        document.querySelectorAll('.invalid-feedback').forEach(error => {
+            error.textContent = '';
+        });
+    }
+    
+    function showErrors(errors) {
+        Object.keys(errors).forEach(field => {
+            const input = document.getElementById(field);
+            const errorDiv = document.getElementById(field + '-error');
+            
+            if (input && errorDiv) {
+                input.classList.add('is-invalid');
+                errorDiv.textContent = errors[field];
+            }
+        });
+    }
+    
+    function showAlert(type, message) {
+        const alertHtml = `
+            <div class="alert alert-${type === 'error' ? 'danger' : type} alert-dismissible fade show" role="alert">
+                <i class="fas fa-${type === 'error' ? 'exclamation-circle' : 'check-circle'} me-2"></i>
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        `;
+        
+        const flashContainer = document.querySelector('.flash-messages') || 
+                              document.querySelector('.auth-card-header');
+        
+        if (flashContainer) {
+            flashContainer.insertAdjacentHTML('afterend', alertHtml);
+        }
+    }
+});
+</script>
+{% endblock %}

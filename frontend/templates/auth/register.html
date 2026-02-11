@@ -1,0 +1,432 @@
+{% extends "layout/auth_base.html" %}
+
+{% block title %}Sign Up - Cognitive Career AI{% endblock %}
+
+{% block auth_title %}Create Your Account{% endblock %}
+{% block auth_subtitle %}Join thousands of professionals accelerating their careers with AI insights{% endblock %}
+
+{% block auth_content %}
+<form method="POST" id="registerForm" novalidate>
+    {{ csrf_token() }}
+    
+    <!-- Name Fields -->
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <label for="first_name" class="form-label">
+                <i class="fas fa-user me-1"></i>First Name
+            </label>
+            <input type="text" 
+                   class="form-control form-control-lg" 
+                   id="first_name" 
+                   name="first_name" 
+                   placeholder="John"
+                   value="{{ request.form.first_name }}"
+                   required>
+            <div class="invalid-feedback" id="first_name-error"></div>
+        </div>
+        <div class="col-md-6">
+            <label for="last_name" class="form-label">
+                <i class="fas fa-user me-1"></i>Last Name
+            </label>
+            <input type="text" 
+                   class="form-control form-control-lg" 
+                   id="last_name" 
+                   name="last_name" 
+                   placeholder="Doe"
+                   value="{{ request.form.last_name }}"
+                   required>
+            <div class="invalid-feedback" id="last_name-error"></div>
+        </div>
+    </div>
+    
+    <!-- Email Field -->
+    <div class="mb-3">
+        <label for="email" class="form-label">
+            <i class="fas fa-envelope me-1"></i>Email Address
+        </label>
+        <input type="email" 
+               class="form-control form-control-lg" 
+               id="email" 
+               name="email" 
+               placeholder="john.doe@example.com"
+               value="{{ request.form.email }}"
+               required>
+        <div class="invalid-feedback" id="email-error"></div>
+        <div class="form-text">We'll never share your email with anyone else.</div>
+    </div>
+    
+    <!-- Password Fields -->
+    <div class="mb-3">
+        <label for="password" class="form-label">
+            <i class="fas fa-lock me-1"></i>Password
+        </label>
+        <div class="input-group">
+            <input type="password" 
+                   class="form-control form-control-lg" 
+                   id="password" 
+                   name="password" 
+                   placeholder="Create a strong password"
+                   required
+                   minlength="8">
+            <button type="button" class="btn btn-outline-secondary" id="togglePassword">
+                <i class="fas fa-eye"></i>
+            </button>
+        </div>
+        <div class="invalid-feedback" id="password-error"></div>
+        
+        <!-- Password Strength Indicator -->
+        <div class="password-strength mt-2">
+            <div class="progress" style="height: 4px;">
+                <div class="progress-bar" id="passwordStrengthBar" role="progressbar" style="width: 0%"></div>
+            </div>
+            <small class="form-text" id="passwordStrengthText">Password strength: Weak</small>
+        </div>
+    </div>
+    
+    <div class="mb-3">
+        <label for="confirm_password" class="form-label">
+            <i class="fas fa-lock me-1"></i>Confirm Password
+        </label>
+        <input type="password" 
+               class="form-control form-control-lg" 
+               id="confirm_password" 
+               name="confirm_password" 
+               placeholder="Confirm your password"
+               required>
+        <div class="invalid-feedback" id="confirm_password-error"></div>
+    </div>
+    
+    <!-- Professional Info -->
+    <div class="mb-3">
+        <label for="profession" class="form-label">
+            <i class="fas fa-briefcase me-1"></i>Current Profession
+        </label>
+        <select class="form-select form-select-lg" id="profession" name="profession" required>
+            <option value="">Select your profession</option>
+            <option value="Software Developer">Software Developer</option>
+            <option value="Data Scientist">Data Scientist</option>
+            <option value="Product Manager">Product Manager</option>
+            <option value="Designer">Designer</option>
+            <option value="Marketing Specialist">Marketing Specialist</option>
+            <option value="Sales Professional">Sales Professional</option>
+            <option value="Business Analyst">Business Analyst</option>
+            <option value="Consultant">Consultant</option>
+            <option value="Engineer">Engineer</option>
+            <option value="Research Scientist">Research Scientist</option>
+            <option value="Student">Student</option>
+            <option value="Other">Other</option>
+        </select>
+        <div class="invalid-feedback" id="profession-error"></div>
+    </div>
+    
+    <!-- Terms and Privacy -->
+    <div class="mb-4">
+        <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="terms_accepted" name="terms_accepted" required>
+            <label class="form-check-label" for="terms_accepted">
+                I agree to the <a href="{{ url_for('main.terms') }}" target="_blank">Terms of Service</a> 
+                and <a href="{{ url_for('main.privacy') }}" target="_blank">Privacy Policy</a>
+            </label>
+            <div class="invalid-feedback" id="terms_accepted-error"></div>
+        </div>
+        <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="newsletter" name="newsletter">
+            <label class="form-check-label" for="newsletter">
+                Subscribe to our newsletter for career insights and updates
+            </label>
+        </div>
+    </div>
+    
+    <!-- Register Button -->
+    <button type="submit" class="btn btn-primary btn-lg w-100 mb-3" id="registerBtn">
+        <span class="btn-text">
+            <i class="fas fa-user-plus me-2"></i>Create Account
+        </span>
+        <span class="btn-loading d-none">
+            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+            Creating Account...
+        </span>
+    </button>
+    
+    <!-- Divider -->
+    <div class="divider my-4">
+        <span class="divider-text">or sign up with</span>
+    </div>
+    
+    <!-- Social Registration Options -->
+    <div class="row g-2">
+        <div class="col-6">
+            <button type="button" class="btn btn-outline-secondary w-100">
+                <i class="fab fa-google me-2"></i>Google
+            </button>
+        </div>
+        <div class="col-6">
+            <button type="button" class="btn btn-outline-secondary w-100">
+                <i class="fab fa-linkedin me-2"></i>LinkedIn
+            </button>
+        </div>
+    </div>
+</form>
+{% endblock %}
+
+{% block auth_footer %}
+<div class="text-center">
+    <p class="text-muted mb-0">
+        Already have an account? 
+        <a href="{{ url_for('auth.login') }}" class="text-decoration-none fw-semibold">
+            Sign in here
+        </a>
+    </p>
+</div>
+{% endblock %}
+
+{% block auth_links %}
+<div class="small text-muted">
+    <a href="{{ url_for('main.privacy') }}" class="text-decoration-none me-3">Privacy Policy</a>
+    <a href="{{ url_for('main.terms') }}" class="text-decoration-none me-3">Terms of Service</a>
+    <a href="{{ url_for('main.support') }}" class="text-decoration-none">Support</a>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('registerForm');
+    const registerBtn = document.getElementById('registerBtn');
+    const passwordField = document.getElementById('password');
+    const confirmPasswordField = document.getElementById('confirm_password');
+    const togglePassword = document.getElementById('togglePassword');
+    
+    // Password visibility toggle
+    togglePassword.addEventListener('click', function() {
+        const type = passwordField.getAttribute('type') === 'password' ? 'text' : 'password';
+        passwordField.setAttribute('type', type);
+        confirmPasswordField.setAttribute('type', type);
+        this.innerHTML = type === 'password' ? '<i class="fas fa-eye"></i>' : '<i class="fas fa-eye-slash"></i>';
+    });
+    
+    // Password strength checker
+    passwordField.addEventListener('input', function() {
+        checkPasswordStrength(this.value);
+    });
+    
+    // Password confirmation validation
+    confirmPasswordField.addEventListener('input', function() {
+        validatePasswordMatch();
+    });
+    
+    // Real-time email validation
+    const emailField = document.getElementById('email');
+    emailField.addEventListener('blur', function() {
+        if (this.value) {
+            validateEmailAvailability(this.value);
+        }
+    });
+    
+    // Form submission
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // Clear previous errors
+        clearErrors();
+        
+        // Validate form
+        if (!validateForm()) {
+            return;
+        }
+        
+        // Show loading state
+        setLoadingState(true);
+        
+        // Get form data
+        const formData = new FormData(form);
+        
+        // Submit via AJAX
+        fetch('{{ url_for("auth.register") }}', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showAlert('success', 'Account created successfully! Please check your email to verify your account.');
+                
+                // Redirect after delay
+                setTimeout(() => {
+                    window.location.href = data.redirect_url || '{{ url_for("auth.login") }}';
+                }, 2000);
+            } else {
+                if (data.errors) {
+                    showErrors(data.errors);
+                } else {
+                    showAlert('error', data.message || 'Registration failed. Please try again.');
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showAlert('error', 'Network error. Please check your connection and try again.');
+        })
+        .finally(() => {
+            setLoadingState(false);
+        });
+    });
+    
+    function checkPasswordStrength(password) {
+        const strengthBar = document.getElementById('passwordStrengthBar');
+        const strengthText = document.getElementById('passwordStrengthText');
+        
+        let strength = 0;
+        let text = 'Weak';
+        let color = 'danger';
+        
+        if (password.length >= 8) strength += 20;
+        if (password.match(/[a-z]/)) strength += 20;
+        if (password.match(/[A-Z]/)) strength += 20;
+        if (password.match(/[0-9]/)) strength += 20;
+        if (password.match(/[^a-zA-Z0-9]/)) strength += 20;
+        
+        if (strength >= 80) {
+            text = 'Strong';
+            color = 'success';
+        } else if (strength >= 60) {
+            text = 'Good';
+            color = 'info';
+        } else if (strength >= 40) {
+            text = 'Fair';
+            color = 'warning';
+        }
+        
+        strengthBar.style.width = strength + '%';
+        strengthBar.className = `progress-bar bg-${color}`;
+        strengthText.textContent = `Password strength: ${text}`;
+        strengthText.className = `form-text text-${color}`;
+    }
+    
+    function validatePasswordMatch() {
+        const password = passwordField.value;
+        const confirmPassword = confirmPasswordField.value;
+        
+        if (confirmPassword && password !== confirmPassword) {
+            confirmPasswordField.classList.add('is-invalid');
+            document.getElementById('confirm_password-error').textContent = 'Passwords do not match';
+            return false;
+        } else {
+            confirmPasswordField.classList.remove('is-invalid');
+            document.getElementById('confirm_password-error').textContent = '';
+            return true;
+        }
+    }
+    
+    function validateEmailAvailability(email) {
+        fetch('{{ url_for("auth.check_email") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({email: email})
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (!data.available) {
+                emailField.classList.add('is-invalid');
+                document.getElementById('email-error').textContent = 'This email is already registered';
+            } else {
+                emailField.classList.remove('is-invalid');
+                document.getElementById('email-error').textContent = '';
+            }
+        })
+        .catch(error => {
+            console.error('Email validation error:', error);
+        });
+    }
+    
+    function validateForm() {
+        let isValid = true;
+        
+        // Validate required fields
+        const requiredFields = ['first_name', 'last_name', 'email', 'password', 'confirm_password', 'profession'];
+        requiredFields.forEach(field => {
+            const input = document.getElementById(field);
+            if (!input.value.trim()) {
+                input.classList.add('is-invalid');
+                document.getElementById(field + '-error').textContent = 'This field is required';
+                isValid = false;
+            }
+        });
+        
+        // Validate password match
+        if (!validatePasswordMatch()) {
+            isValid = false;
+        }
+        
+        // Validate terms acceptance
+        const termsCheckbox = document.getElementById('terms_accepted');
+        if (!termsCheckbox.checked) {
+            termsCheckbox.classList.add('is-invalid');
+            document.getElementById('terms_accepted-error').textContent = 'You must accept the terms to continue';
+            isValid = false;
+        }
+        
+        return isValid;
+    }
+    
+    function setLoadingState(loading) {
+        const btnText = registerBtn.querySelector('.btn-text');
+        const btnLoading = registerBtn.querySelector('.btn-loading');
+        
+        if (loading) {
+            btnText.classList.add('d-none');
+            btnLoading.classList.remove('d-none');
+            registerBtn.disabled = true;
+        } else {
+            btnText.classList.remove('d-none');
+            btnLoading.classList.add('d-none');
+            registerBtn.disabled = false;
+        }
+    }
+    
+    function clearErrors() {
+        document.querySelectorAll('.is-invalid').forEach(input => {
+            input.classList.remove('is-invalid');
+        });
+        document.querySelectorAll('.invalid-feedback').forEach(error => {
+            error.textContent = '';
+        });
+    }
+    
+    function showErrors(errors) {
+        Object.keys(errors).forEach(field => {
+            const input = document.getElementById(field);
+            const errorDiv = document.getElementById(field + '-error');
+            
+            if (input && errorDiv) {
+                input.classList.add('is-invalid');
+                errorDiv.textContent = Array.isArray(errors[field]) ? errors[field][0] : errors[field];
+            }
+        });
+    }
+    
+    function showAlert(type, message) {
+        const alertHtml = `
+            <div class="alert alert-${type === 'error' ? 'danger' : type} alert-dismissible fade show" role="alert">
+                <i class="fas fa-${type === 'error' ? 'exclamation-circle' : 'check-circle'} me-2"></i>
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        `;
+        
+        const flashContainer = document.querySelector('.flash-messages') || 
+                              document.querySelector('.auth-card-header');
+        
+        if (flashContainer) {
+            flashContainer.insertAdjacentHTML('afterend', alertHtml);
+        }
+    }
+});
+</script>
+{% endblock %}

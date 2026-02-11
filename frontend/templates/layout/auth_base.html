@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Secure login to your AI career recommendation account">
+    <title>{% block title %}Authentication - Cognitive Career AI{% endblock %}</title>
+    
+    <!-- Bootstrap 5.3 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Custom CSS -->
+    <link href="{{ url_for('static', filename='css/main.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/auth.css') }}" rel="stylesheet">
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="auth-page">
+    
+    <!-- Auth Header -->
+    <nav class="auth-navbar">
+        <div class="container">
+            <div class="d-flex justify-content-between align-items-center py-3">
+                <a href="{{ url_for('main.index') }}" class="auth-brand">
+                    <i class="fas fa-brain text-primary me-2"></i>
+                    <span class="fw-semibold">Cognitive Career AI</span>
+                </a>
+                <div>
+                    <button type="button" id="theme-toggle" class="btn btn-outline-secondary btn-sm">
+                        <i class="fas fa-moon"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- Auth Background -->
+    <div class="auth-background">
+        <div class="auth-pattern"></div>
+    </div>
+    
+    <!-- Auth Container -->
+    <div class="auth-container">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-lg-5 col-md-7 col-sm-9">
+                    
+                    <!-- Auth Card -->
+                    <div class="auth-card">
+                        <div class="auth-card-header">
+                            <h2 class="auth-title">{% block auth_title %}{% endblock %}</h2>
+                            <p class="auth-subtitle text-muted">{% block auth_subtitle %}{% endblock %}</p>
+                        </div>
+                        
+                        <!-- Flash Messages -->
+                        {% include 'components/alerts.html' %}
+                        
+                        <!-- Auth Content -->
+                        <div class="auth-card-body">
+                            {% block auth_content %}{% endblock %}
+                        </div>
+                        
+                        <!-- Auth Footer -->
+                        <div class="auth-card-footer">
+                            {% block auth_footer %}{% endblock %}
+                        </div>
+                    </div>
+                    
+                    <!-- Additional Links -->
+                    <div class="auth-links text-center mt-4">
+                        {% block auth_links %}{% endblock %}
+                    </div>
+                    
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    
+    <!-- Custom Auth JS -->
+    <script src="{{ url_for('static', filename='js/auth.js') }}"></script>
+    {% block extra_js %}{% endblock %}
+    
+    <!-- Theme Toggle -->
+    <script>
+        const themeToggle = document.getElementById('theme-toggle');
+        const html = document.documentElement;
+        const icon = themeToggle.querySelector('i');
+        
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        html.setAttribute('data-bs-theme', savedTheme);
+        updateThemeIcon();
+        
+        themeToggle.addEventListener('click', () => {
+            const currentTheme = html.getAttribute('data-bs-theme');
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+            html.setAttribute('data-bs-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            updateThemeIcon();
+        });
+        
+        function updateThemeIcon() {
+            const theme = html.getAttribute('data-bs-theme');
+            icon.className = theme === 'light' ? 'fas fa-moon' : 'fas fa-sun';
+        }
+    </script>
+</body>
+</html>
