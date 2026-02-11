@@ -361,6 +361,36 @@ AuthModule.checkEmailAvailability = function(email) {
  * FORM SUBMISSION HANDLERS
  * ========================================
  */
+/**
+ * ========================================
+ * FORM SUBMISSION
+ * ========================================
+ */
+AuthModule.submitForm = async function(url, formData) {
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            body: formData,
+            credentials: 'same-origin',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        });
+        
+        const data = await response.json();
+        
+        // Check if response is successful
+        if (!response.ok) {
+            throw new Error(data.message || 'Request failed');
+        }
+        
+        return data;
+    } catch (error) {
+        console.error('Form submission error:', error);
+        throw error;
+    }
+};
+
 AuthModule.handleLogin = function(e) {
     e.preventDefault();
     
@@ -375,19 +405,24 @@ AuthModule.handleLogin = function(e) {
     // Set loading state
     this.setSubmissionState(true, 'Signing in...');
     
-    // Submit login
-    this.submitForm(form.action, formData)
+    // Submit login - use form action or default to /login
+    const submitUrl = form.action || '/login';
+    
+    this.submitForm(submitUrl, formData)
         .then(data => {
             if (data.success) {
-                this.showAlert('success', 'Login successful! Redirecting...');
+                this.showAlert('success', data.message || 'Login successful! Redirecting...');
                 
                 // Redirect after delay
                 setTimeout(() => {
                     window.location.href = data.redirect_url || '/dashboard';
                 }, 1000);
             } else {
-                this.handleFormErrors(data);
+                throw new Error(data.message || 'Login failed');
             }
+        })
+        .catch(error => {
+            this.showAlert('error', error.message || 'Login failed. Please try again.');
         })
         .finally(() => {
             this.setSubmissionState(false);
@@ -408,7 +443,7 @@ AuthModule.handleRegistration = function(e) {
     // Additional validation
     if (!this.validatePasswordMatch()) return;
     
-    // Check terms acceptance
+    // Check terms acceptance if checkbox exists
     const termsCheckbox = form.querySelector('#terms_accepted');
     if (termsCheckbox && !termsCheckbox.checked) {
         this.showFieldError(termsCheckbox, 'You must accept the terms to continue');
@@ -417,6 +452,37 @@ AuthModule.handleRegistration = function(e) {
     
     // Set loading state
     this.setSubmissionState(true, 'Creating account...');
+    
+    // Submit registration - use form action or default to /register
+    const submitUrl = form.action || '/register';
+    
+    this.submitForm(submitUrl, formData)
+        .then(data => {
+            if (data.success) {
+                this.showAlert('success', data.message || 'Account created successfully! Redirecting...');
+                
+                // Redirect after delay
+                setTimeout(() => {
+                    window.location.href = data.redirect_url || '/dashboard';
+                }, 1000);
+            } else {
+                // Handle validation errors
+                if (data.errors && Array.isArray(data.errors)) {
+                    data.errors.forEach(error => {
+                        this.showAlert('error', error);
+                    });
+                } else {
+                    throw new Error(data.message || 'Registration failed');
+                }
+            }
+        })
+        .catch(error => {
+            this.showAlert('error', error.message || 'Registration failed. Please try again.');
+        })
+        .finally(() => {
+            this.setSubmissionState(false);
+        });
+};
     
     // Submit registration
     this.submitForm(form.action, formData)

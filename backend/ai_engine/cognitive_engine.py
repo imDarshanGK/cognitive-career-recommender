@@ -39,31 +39,43 @@ class CognitiveRecommendationEngine:
             # Load pre-trained models if available
             self.job_model = joblib.load('models/job_recommendation_model.pkl')
             self.skill_vectorizer = joblib.load('models/skill_vectorizer.pkl')
-        except FileNotFoundError:
-            # Initialize new models if not found
-            self.job_model = RandomForestClassifier(n_estimators=100, random_state=42)
-            self.skill_vectorizer = TfidfVectorizer(max_features=1000, stop_words='english')
+        except (FileNotFoundError, EOFError, Exception):
+            # Initialize new models if not found or corrupted
+            self.job_model = RandomForestClassifier(n_estimators=10, random_state=42)
+            self.skill_vectorizer = TfidfVectorizer(max_features=100, stop_words='english')
         
-        # Initialize explainable AI components
-        self.lime_explainer = LimeTextExplainer(class_names=['Not Suitable', 'Suitable'])
+        # Initialize explainable AI components with error handling
+        try:
+            self.lime_explainer = LimeTextExplainer(class_names=['Not Suitable', 'Suitable'])
+        except Exception:
+            self.lime_explainer = None
     
     def _load_job_data(self):
         """Load job market data for recommendations"""
         try:
             self.job_data = pd.read_csv('data/job_dataset.csv')
-        except FileNotFoundError:
-            # Create sample job data if dataset not available
+        except (FileNotFoundError, Exception):
+            # Create sample job data if dataset not available or corrupted
+            self.job_data = self._create_sample_job_data()
+        
+        # Ensure we have data
+        if self.job_data is None or self.job_data.empty:
             self.job_data = self._create_sample_job_data()
     
     def _create_sample_job_data(self):
         """Create sample job data for testing purposes"""
-        return pd.DataFrame({
-            'job_title': ['Data Scientist', 'Software Engineer', 'Product Manager', 'UX Designer'],
-            'required_skills': ['Python, ML, Statistics', 'Java, Python, SQL', 'Strategy, Analytics', 'Design, Research'],
-            'experience_level': ['Mid-level', 'Entry-level', 'Senior-level', 'Mid-level'],
-            'industry': ['Technology', 'Technology', 'Technology', 'Design'],
-            'salary_range': ['80000-120000', '60000-100000', '100000-150000', '70000-110000']
-        })
+        jobs = [
+            ['Data Scientist', 'Python, ML, Statistics', 'Mid-level', 'Technology', '80000-120000'],
+            ['Software Engineer', 'Java, Python, SQL', 'Entry-level', 'Technology', '60000-100000'],
+            ['Product Manager', 'Strategy, Analytics', 'Senior-level', 'Technology', '100000-150000'],
+            ['UX Designer', 'Design, Research', 'Mid-level', 'Design', '70000-110000'],
+            ['Data Analyst', 'Excel, SQL, Python', 'Entry-level', 'Technology', '50000-80000'],
+            ['Web Developer', 'HTML, CSS, JavaScript', 'Entry-level', 'Technology', '45000-75000']
+        ]
+        
+        return pd.DataFrame(jobs, columns=[
+            'job_title', 'required_skills', 'experience_level', 'industry', 'salary_range'
+        ])
     
     def observe(self, user_data: Dict[str, Any]) -> Dict[str, Any]:
         """

@@ -16,8 +16,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
     <!-- Custom CSS -->
-    <link href="{{ url_for('static', filename='css/main.css') }}" rel="stylesheet">
-    <link href="{{ url_for('static', filename='css/auth.css') }}" rel="stylesheet">
+    <link href="/static/css/main.css" rel="stylesheet">
+    <link href="/static/css/auth.css" rel="stylesheet">
     {% block extra_css %}{% endblock %}
 </head>
 <body class="auth-page">
@@ -26,7 +26,7 @@
     <nav class="auth-navbar">
         <div class="container">
             <div class="d-flex justify-content-between align-items-center py-3">
-                <a href="{{ url_for('main.index') }}" class="auth-brand">
+                <a href="/" class="auth-brand">
                     <i class="fas fa-brain text-primary me-2"></i>
                     <span class="fw-semibold">Cognitive Career AI</span>
                 </a>
@@ -88,6 +88,16 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     
     <!-- Custom Auth JS -->
+    <script src="/static/js/auth.js"></script>
+    
+    <!-- Initialize Auth Module -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            if (typeof AuthModule !== 'undefined') {
+                AuthModule.init();
+            }
+        });
+    </script>
     <script src="{{ url_for('static', filename='js/auth.js') }}"></script>
     {% block extra_js %}{% endblock %}
     
