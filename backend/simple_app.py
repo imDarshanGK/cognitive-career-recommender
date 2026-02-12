@@ -283,11 +283,12 @@ def home():
             
             .workflow-steps {
                 display: grid;
-                grid-template-columns: repeat(5, 1fr);
-                gap: 1.5rem;
+                grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+                gap: 1rem;
                 margin-top: 4rem;
                 position: relative;
-                padding: 0 2rem;
+                padding: 0;
+                justify-items: center;
             }
             
             .workflow-steps::before {
@@ -763,10 +764,9 @@ def home():
         <footer>
             <div class="container-lg">
                 <div class="row mb-4">
-                    <div class="col-lg-3 col-md-6 footer-content">
+                    <div class="col-lg-4 col-md-6 footer-content">
                         <h5 class="footer-title">CareerAI</h5>
-                        <p style="color: rgba(255,255,255,0.7); margin-bottom: 1rem; font-size: 0.95rem;">AI-powered cognitive career recommendation platform.</p>
-                        <p style="color: rgba(255,255,255,0.6); font-size: 0.85rem; line-height: 1.6;">Helping students and professionals discover the right career path using Cognitive AI and Explainable AI technologies.</p>
+                        <p style="color: rgba(255,255,255,0.7); font-size: 0.9rem;">AI-powered cognitive career recommendation platform.</p>
                     </div>
                     <div class="col-lg-4 col-md-6 footer-content">
                         <h5 class="footer-title">Product</h5>
@@ -777,13 +777,8 @@ def home():
                     <div class="col-lg-4 col-md-6 footer-content">
                         <h5 class="footer-title">Resources</h5>
                         <a href="#" class="footer-link">Documentation</a>
-                        <a href="#" class="footer-link">API Reference</a>
                         <a href="#" class="footer-link">Support</a>
                         <a href="#" class="footer-link">FAQ</a>
-                    </div>
-                    <div class="col-lg-4 col-md-6 footer-content">
-                        <h5 class="footer-title">About</h5>
-                        <p style="color: rgba(255,255,255,0.7); font-size: 0.9rem; line-height: 1.8;">Built as a Cognitive AI Project<br>NLP, ML & Explainable AI<br>Academic Research</p>
                     </div>
                 </div>
                 
