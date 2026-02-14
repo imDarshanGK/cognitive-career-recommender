@@ -4,8 +4,15 @@ Core AI Logic for matching user skills with job requirements
 """
 
 import numpy as np
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
+
+# Optional sklearn imports
+try:
+    from sklearn.feature_extraction.text import TfidfVectorizer
+    from sklearn.metrics.pairwise import cosine_similarity
+    SKLEARN_AVAILABLE = True
+except ImportError:
+    SKLEARN_AVAILABLE = False
+
 from models import db, User, UserSkill, Job, JobSkill
 
 class SkillMatcher:

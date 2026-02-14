@@ -3,16 +3,38 @@ NLP-based Resume Analyzer for Cognitive Career Recommendation System
 Handles resume parsing, skill extraction, and interest analysis using NLP techniques
 """
 
-import spacy
 import pandas as pd
 import numpy as np
 import re
-from textblob import TextBlob
-from sklearn.feature_extraction.text import TfidfVectorizer
 from collections import Counter
 import PyPDF2
 from docx import Document
-import nltk
+
+# Optional NLP/ML imports - may not be available in production
+try:
+    import spacy
+    SPACY_AVAILABLE = True
+except ImportError:
+    SPACY_AVAILABLE = False
+
+try:
+    from textblob import TextBlob
+    TEXTBLOB_AVAILABLE = True
+except ImportError:
+    TEXTBLOB_AVAILABLE = False
+
+try:
+    from sklearn.feature_extraction.text import TfidfVectorizer
+    SKLEARN_AVAILABLE = True
+except ImportError:
+    SKLEARN_AVAILABLE = False
+
+try:
+    import nltk
+    NLTK_AVAILABLE = True
+except ImportError:
+    NLTK_AVAILABLE = False
+
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize, sent_tokenize
 from typing import Dict, List, Any, Tuple, Optional

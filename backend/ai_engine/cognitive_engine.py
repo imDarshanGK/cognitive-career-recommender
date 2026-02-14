@@ -5,16 +5,32 @@ Implements the cognitive loop: Observe → Understand → Analyze → Reason →
 
 import numpy as np
 import pandas as pd
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
-import shap
-import lime
-from lime.lime_text import LimeTextExplainer
-import joblib
 import json
 from typing import Dict, List, Any, Tuple
 from datetime import datetime
+
+# Optional imports - these may not be available in production
+try:
+    from sklearn.ensemble import RandomForestClassifier
+    from sklearn.feature_extraction.text import TfidfVectorizer
+    from sklearn.metrics.pairwise import cosine_similarity
+    SKLEARN_AVAILABLE = True
+except ImportError:
+    SKLEARN_AVAILABLE = False
+
+try:
+    import shap
+    import lime
+    from lime.lime_text import LimeTextExplainer
+    EXPLAINER_AVAILABLE = True
+except ImportError:
+    EXPLAINER_AVAILABLE = False
+
+try:
+    import joblib
+    JOBLIB_AVAILABLE = True
+except ImportError:
+    JOBLIB_AVAILABLE = False
 
 class CognitiveRecommendationEngine:
     """
