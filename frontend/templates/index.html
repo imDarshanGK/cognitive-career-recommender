@@ -334,8 +334,8 @@
 
         .steps-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 15px;
             position: relative;
         }
 
@@ -565,11 +565,22 @@
             }
 
             .steps-grid {
-                grid-template-columns: repeat(2, 1fr);
+                grid-template-columns: repeat(4, 1fr);
+                gap: 10px;
             }
 
             .steps-grid::before {
                 display: none;
+            }
+
+            .step-circle {
+                width: 60px;
+                height: 60px;
+                font-size: 1rem;
+            }
+
+            .step-label {
+                font-size: 0.85rem;
             }
 
             .output-grid {
@@ -587,7 +598,18 @@
             }
 
             .steps-grid {
-                grid-template-columns: 1fr;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 10px;
+            }
+
+            .step-circle {
+                width: 55px;
+                height: 55px;
+                font-size: 0.95rem;
+            }
+
+            .step-label {
+                font-size: 0.8rem;
             }
 
             .footer-content {
