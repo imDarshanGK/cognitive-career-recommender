@@ -479,7 +479,11 @@ DashboardModule.renderRecommendations = function(recommendations, userSkills) {
     const skillsLower = userSkills.map(skill => skill.toLowerCase());
     const aggregatedMissing = new Set();
 
-    const cards = recommendations.slice(0, 3).map(rec => {
+    // Show all relevant recommendations (those with > 0% match), or at least 5 recommendations
+    const relevantRecs = recommendations.filter(rec => rec.match_score > 0).slice(0, 7);
+    const allRecs = relevantRecs.length > 0 ? relevantRecs : recommendations.slice(0, 7);
+
+    const cards = allRecs.map(rec => {
         const required = this.parseRequiredSkills(rec.required_skills);
         const matching = rec.matched_skills && rec.matched_skills.length ? rec.matched_skills : required.filter(skill => skillsLower.includes(skill.toLowerCase()));
         const missing = rec.missing_skills && rec.missing_skills.length ? rec.missing_skills : required.filter(skill => !skillsLower.includes(skill.toLowerCase()));
