@@ -5,10 +5,15 @@ Main Flask Application Entry Point
 
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for, flash
 import os
+import sys
 import hashlib
 import secrets
 import sqlite3
 from datetime import datetime
+
+# Add backend directory to path for imports
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
 from ai_engine.cognitive_engine import CognitiveRecommendationEngine
 from services.career_matcher import match_roles
 from nlp_processor.resume_analyzer import ResumeAnalyzer
