@@ -11,12 +11,40 @@ class ResumeAnalyzer:
     """
     
     def __init__(self):
-        # Basic skill patterns
+        # Comprehensive skill patterns organized by category
         self.skill_patterns = {
-            'programming': ['python', 'java', 'javascript', 'c++', 'c#', 'sql', 'html', 'css', 'react', 'node'],
-            'data_science': ['machine learning', 'data analysis', 'statistics', 'pandas', 'numpy', 'scikit-learn'],
-            'tools': ['excel', 'powerpoint', 'word', 'photoshop', 'illustrator', 'tableau'],
-            'soft_skills': ['communication', 'leadership', 'teamwork', 'problem solving', 'analytical']
+            'programming': [
+                'python', 'java', 'javascript', 'typescript', 'c++', 'c#', 'php', 'ruby', 'go', 'rust',
+                'kotlin', 'swift', 'scala', 'r programming', 'perl', 'shell', 'bash', 'groovy'
+            ],
+            'web_frameworks': [
+                'react', 'angular', 'vue', 'django', 'flask', 'fastapi', 'spring', 'spring boot',
+                'express', 'node.js', 'node', 'asp.net', 'laravel', 'rails', 'nextjs', 'nuxt'
+            ],
+            'databases': [
+                'sql', 'mysql', 'postgresql', 'mongodb', 'cassandra', 'redis', 'elasticsearch',
+                'dynamodb', 'oracle', 'sqlite', 'mariadb', 'neo4j', 'graphql'
+            ],
+            'data_science': [
+                'machine learning', 'deep learning', 'data analysis', 'statistics', 'data science',
+                'pandas', 'numpy', 'scikit-learn', 'tensorflow', 'pytorch', 'keras', 'matplotlib',
+                'seaborn', 'spacy', 'nltk', 'nlp'
+            ],
+            'cloud_devops': [
+                'aws', 'azure', 'gcp', 'google cloud', 'docker', 'kubernetes', 'jenkins',
+                'terraform', 'ansible', 'ci/cd', 'gitlab', 'github', 'bitbucket', 'devops',
+                'heroku', 'aws lambda'
+            ],
+            'tools': [
+                'git', 'github', 'gitlab', 'jira', 'confluence', 'slack', 'docker',
+                'postman', 'vim', 'vscode', 'visual studio', 'intellij', 'eclipse',
+                'tableau', 'power bi', 'excel', 'powerpoint', 'word', 'photoshop'
+            ],
+            'soft_skills': [
+                'communication', 'leadership', 'teamwork', 'problem solving', 'analytical',
+                'project management', 'agile', 'scrum', 'kanban', 'planning', 'mentoring',
+                'presentation', 'negotiation'
+            ]
         }
         
         # Education patterns
@@ -67,13 +95,17 @@ class ResumeAnalyzer:
             }
     
     def _extract_skills(self, text: str) -> List[str]:
-        """Extract skills from resume text"""
+        """Extract skills from resume text using word boundary matching"""
         text_lower = text.lower()
         found_skills = []
         
         for category, skills in self.skill_patterns.items():
             for skill in skills:
-                if skill in text_lower:
+                # Use word boundaries to ensure exact skill matching
+                # Convert skill to regex pattern with word boundaries
+                import re as regex_module
+                pattern = r'\b' + regex_module.escape(skill) + r'\b'
+                if regex_module.search(pattern, text_lower):
                     found_skills.append(skill.title())
         
         return list(set(found_skills))  # Remove duplicates
