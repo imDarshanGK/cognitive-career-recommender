@@ -16,9 +16,10 @@ const DashboardModule = {
         fileUploadMaxSize: 5 * 1024 * 1024, // 5MB
         allowedFileTypes: ['pdf', 'doc', 'docx'],
         apiEndpoints: {
-            uploadResume: '/api/resume/upload',
-            getRecommendations: '/api/recommendations',
-            getSkillsAssessment: '/api/skills/assessment'
+            uploadResume: '/upload_resume',
+            analyzeProfile: '/analyze_profile',
+            feedback: '/feedback',
+            feedbackHistory: '/api/feedback'
         }
     },
     
@@ -26,7 +27,9 @@ const DashboardModule = {
     state: {
         isUploading: false,
         hasRecommendations: false,
-        currentUser: null
+        currentUser: null,
+        lastProfile: null,
+        lastSkills: []
     },
     
     // Initialize dashboard
@@ -34,8 +37,8 @@ const DashboardModule = {
         this.setupEventListeners();
         this.initializeFileUpload();
         this.setupScrollAnimations();
-        this.initializeCounters();
         this.loadUserData();
+        this.loadFeedbackHistory();
         
         console.log('🎯 Dashboard module initialized');
     }
@@ -52,18 +55,12 @@ DashboardModule.setupEventListeners = function() {
     
     // File upload events
     this.setupFileUploadEvents();
+
+    // Manual profile events
+    this.setupManualProfileEvents();
     
-    // Quick action events
+    // Primary action events
     this.setupQuickActionEvents();
-    
-    // Profile completion events
-    this.setupProfileEvents();
-    
-    // Assessment events
-    this.setupAssessmentEvents();
-    
-    // Help and tutorial events
-    this.setupHelpEvents();
 };
 
 DashboardModule.setupNavigationEvents = function() {
@@ -71,6 +68,12 @@ DashboardModule.setupNavigationEvents = function() {
     document.getElementById('uploadResumeNav')?.addEventListener('click', (e) => {
         e.preventDefault();
         this.scrollToSection('fileDropZone');
+    });
+
+    // Manual profile navigation
+    document.getElementById('manualProfileNav')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        this.scrollToSection('manual-profile');
     });
     
     // Careers navigation
@@ -82,13 +85,31 @@ DashboardModule.setupNavigationEvents = function() {
     // Skills navigation
     document.getElementById('skillsNav')?.addEventListener('click', (e) => {
         e.preventDefault();
-        this.startSkillsAssessment();
+        this.scrollToSection('skill-gap');
+    });
+
+    // Roadmap navigation
+    document.getElementById('roadmapNav')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        this.scrollToSection('roadmap');
+    });
+
+    // Feedback navigation
+    document.getElementById('feedbackNav')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        this.scrollToSection('feedback');
     });
     
-    // Settings navigation
-    document.getElementById('settingsLink')?.addEventListener('click', (e) => {
+    return;
+};
+
+DashboardModule.setupManualProfileEvents = function() {
+    const form = document.getElementById('manualProfileForm');
+    if (!form) return;
+
+    form.addEventListener('submit', (e) => {
         e.preventDefault();
-        this.openSettings();
+        this.handleManualProfileSubmit();
     });
 };
 
@@ -145,47 +166,6 @@ DashboardModule.setupQuickActionEvents = function() {
     document.getElementById('exploreBtn')?.addEventListener('click', () => {
         this.explorecareers();
     });
-    
-    // Start Assessment button
-    document.getElementById('startAssessmentBtn')?.addEventListener('click', () => {
-        this.startSkillsAssessment();
-    });
-    
-    // Action buttons
-    document.querySelectorAll('.action-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const action = e.currentTarget.querySelector('span').textContent.trim().toLowerCase();
-            this.handleQuickAction(action);
-        });
-    });
-};
-
-DashboardModule.setupProfileEvents = function() {
-    // Profile completion tasks
-    document.querySelectorAll('.task-item:not(.completed)').forEach(task => {
-        task.addEventListener('click', () => {
-            window.location.href = '/auth/profile';
-        });
-    });
-};
-
-DashboardModule.setupAssessmentEvents = function() {
-    // Skills badges interaction
-    document.querySelectorAll('.skill-badge').forEach(badge => {
-        badge.addEventListener('click', () => {
-            badge.classList.add('animate-pulse');
-            setTimeout(() => {
-                badge.classList.remove('animate-pulse');
-            }, 600);
-        });
-    });
-};
-
-DashboardModule.setupHelpEvents = function() {
-    // Floating help button
-    document.querySelector('.floating-help button')?.addEventListener('click', () => {
-        this.showHelpModal();
-    });
 };
 
 /**
@@ -194,42 +174,8 @@ DashboardModule.setupHelpEvents = function() {
  * ========================================
  */
 DashboardModule.initializeFileUpload = function() {
-    // Add drag and drop styles
-    const style = document.createElement('style');
-    style.textContent = `
-        .file-drop-zone {
-            border: 2px dashed #dee2e6;
-            border-radius: 8px;
-            padding: 2rem;
-            text-align: center;
-            transition: all 0.3s ease;
-            cursor: pointer;
-            background: #f8f9fa;
-        }
-        
-        .file-drop-zone:hover {
-            border-color: #007bff;
-            background: #e3f2fd;
-        }
-        
-        .file-drop-zone.dragover {
-            border-color: #007bff;
-            background: #e3f2fd;
-            transform: scale(1.02);
-        }
-        
-        .drop-icon {
-            font-size: 3rem;
-            color: #6c757d;
-            margin-bottom: 1rem;
-        }
-        
-        .file-drop-zone:hover .drop-icon {
-            color: #007bff;
-            animation: bounce 0.6s ease;
-        }
-    `;
-    document.head.appendChild(style);
+    // Styling handled by dashboard.css
+    return;
 };
 
 DashboardModule.handleFileUpload = function(file) {
@@ -251,10 +197,10 @@ DashboardModule.handleFileUpload = function(file) {
     // Upload file
     this.uploadResumeFile(formData)
         .then(response => {
-            if (response.success) {
-                this.handleUploadSuccess(response);
+            if (response && (response.error || response.status === 'error')) {
+                this.handleUploadError(response.error || response.message || 'Upload failed.');
             } else {
-                this.handleUploadError(response.message);
+                this.handleUploadSuccess(response);
             }
         })
         .catch(error => {
@@ -352,22 +298,355 @@ DashboardModule.handleUploadSuccess = function(response) {
     if (progressBar) {
         progressBar.style.width = '100%';
     }
+
+    if (response && (response.error || response.status === 'error')) {
+        this.showAlert('error', response.error || response.message || 'Resume analysis failed.');
+        return;
+    }
     
     // Show success message
-    this.showAlert('success', 'Resume uploaded successfully! Generating recommendations...');
-    
-    // Update stats
-    this.updateStats(response.stats);
-    
-    // Load recommendations
-    setTimeout(() => {
-        this.loadRecommendations(response.analysis);
-    }, 1000);
+    this.showAlert('success', 'Resume uploaded successfully. Building your profile...');
+
+    // Build profile data from resume response
+    const profilePayload = this.buildProfileFromResume(response);
+    if (!profilePayload) {
+        this.showAlert('warning', 'Resume parsed, but no usable profile data was found. Try manual profile input.');
+        return;
+    }
+
+    this.setProfileStatus('Resume parsed');
+    this.submitProfileForAnalysis(profilePayload, profilePayload.skills || []);
 };
 
 DashboardModule.handleUploadError = function(message) {
     this.showAlert('error', message);
     this.shakeElement('.file-drop-zone');
+};
+
+DashboardModule.handleManualProfileSubmit = function() {
+    const educationLevel = document.getElementById('educationLevel')?.value.trim();
+    const yearsExperienceRaw = document.getElementById('yearsExperience')?.value;
+    const skillsInput = document.getElementById('skillsInput')?.value || '';
+    const interestArea = document.getElementById('interestArea')?.value || '';
+
+    const skills = this.normalizeSkills(skillsInput);
+    const interests = this.normalizeSkills(interestArea);
+    const yearsExperience = yearsExperienceRaw ? parseFloat(yearsExperienceRaw) : 0;
+
+    if (!educationLevel && skills.length === 0 && interests.length === 0 && !yearsExperience) {
+        this.showAlert('warning', 'Add at least one skill, education level, or interest to continue.');
+        return;
+    }
+
+    const payload = {
+        skills: skills,
+        interests: interests,
+        education: { degrees: educationLevel ? [educationLevel] : [] },
+        experience: yearsExperience ? [{ years: yearsExperience }] : []
+    };
+
+    this.state.lastProfile = payload;
+    this.state.lastSkills = skills;
+    this.setProfileStatus('Manual profile ready');
+    this.submitProfileForAnalysis(payload, skills);
+};
+
+DashboardModule.buildProfileFromResume = function(response) {
+    if (!response) return null;
+
+    if (response.structured_profile) {
+        return response.structured_profile;
+    }
+
+    const skills = [];
+    if (response.skills) {
+        if (Array.isArray(response.skills)) {
+            skills.push(...response.skills);
+        } else {
+            const technical = response.skills.technical_skills || [];
+            const soft = response.skills.soft_skills || [];
+            skills.push(...technical, ...soft);
+        }
+    }
+
+    if (response.resume_data && response.resume_data.skills) {
+        const resumeSkills = response.resume_data.skills;
+        if (Array.isArray(resumeSkills)) {
+            skills.push(...resumeSkills);
+        } else {
+            skills.push(...(resumeSkills.technical_skills || []), ...(resumeSkills.soft_skills || []));
+        }
+    }
+
+    if (response.data && response.data.skills && Array.isArray(response.data.skills)) {
+        skills.push(...response.data.skills);
+    }
+
+    const educationDegrees = [];
+    if (response.education) {
+        if (response.education.degree) {
+            educationDegrees.push(response.education.degree);
+        }
+        if (Array.isArray(response.education.degrees)) {
+            educationDegrees.push(...response.education.degrees);
+        }
+    }
+
+    if (response.resume_data && response.resume_data.education) {
+        const resumeEdu = response.resume_data.education;
+        if (resumeEdu.degree) {
+            educationDegrees.push(resumeEdu.degree);
+        }
+        if (Array.isArray(resumeEdu.degrees)) {
+            educationDegrees.push(...resumeEdu.degrees);
+        }
+    }
+
+    if (response.data && response.data.education && response.data.education.degree) {
+        educationDegrees.push(response.data.education.degree);
+    }
+
+    let yearsExperience = 0;
+    if (Array.isArray(response.experience) && response.experience.length) {
+        const expEntry = response.experience[0];
+        yearsExperience = expEntry.total_years || expEntry.years || 0;
+    }
+
+    if (response.resume_data && Array.isArray(response.resume_data.experience) && response.resume_data.experience.length) {
+        const expEntry = response.resume_data.experience[0];
+        yearsExperience = expEntry.total_years || expEntry.years || yearsExperience;
+    }
+
+    const interests = response.interests || (response.data && response.data.interests) || (response.resume_data && response.resume_data.interests) || [];
+
+    const normalizedSkills = this.normalizeSkills(skills.join(', '));
+
+    if (normalizedSkills.length === 0 && educationDegrees.length === 0 && !yearsExperience && interests.length === 0) {
+        return null;
+    }
+
+    return {
+        skills: normalizedSkills,
+        interests: Array.isArray(interests) ? interests : this.normalizeSkills(String(interests)),
+        education: { degrees: educationDegrees },
+        experience: yearsExperience ? [{ years: yearsExperience }] : []
+    };
+};
+
+DashboardModule.normalizeSkills = function(input) {
+    if (!input) return [];
+    return input
+        .split(',')
+        .map(item => item.trim())
+        .filter(Boolean);
+};
+
+DashboardModule.submitProfileForAnalysis = function(profilePayload, userSkills) {
+    this.showLoadingOverlay('Analyzing profile and matching roles...');
+
+    fetch(this.config.apiEndpoints.analyzeProfile, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify(profilePayload)
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (data.recommendations && data.recommendations.length) {
+                this.renderRecommendations(data.recommendations, userSkills);
+                this.setProfileStatus('Recommendations ready');
+            } else {
+                this.showAlert('warning', 'No recommendations returned. Try adding more skills.');
+                this.showEmptyRecommendations();
+            }
+        })
+        .catch(() => {
+            this.showAlert('error', 'Profile analysis failed. Please try again.');
+        })
+        .finally(() => {
+            this.hideLoadingOverlay();
+        });
+};
+
+DashboardModule.renderRecommendations = function(recommendations, userSkills) {
+    const list = document.getElementById('recommendationsList');
+    const empty = document.getElementById('recommendationsEmpty');
+
+    if (!list || !empty) return;
+
+    const skillsLower = userSkills.map(skill => skill.toLowerCase());
+    const aggregatedMissing = new Set();
+
+    const cards = recommendations.slice(0, 3).map(rec => {
+        const required = this.parseRequiredSkills(rec.required_skills);
+        const matching = rec.matched_skills && rec.matched_skills.length ? rec.matched_skills : required.filter(skill => skillsLower.includes(skill.toLowerCase()));
+        const missing = rec.missing_skills && rec.missing_skills.length ? rec.missing_skills : required.filter(skill => !skillsLower.includes(skill.toLowerCase()));
+        const explanationLines = rec.explanation && rec.explanation.length ? rec.explanation : ['Calculated using skill overlap.'];
+
+        missing.forEach(skill => aggregatedMissing.add(skill));
+
+        const scoreValue = typeof rec.match_score === 'number'
+            ? Math.round((rec.match_score <= 1 ? rec.match_score * 100 : rec.match_score))
+            : 0;
+
+        return `
+            <article class="recommendation-card">
+                <div class="d-flex align-items-start justify-content-between">
+                    <div>
+                        <h4>${rec.job_title || 'Career Role'}</h4>
+                        <div class="match-score">
+                            Match score <span class="score-pill">${scoreValue}%</span>
+                        </div>
+                    </div>
+                    <i class="fas fa-briefcase text-primary"></i>
+                </div>
+                <div class="explanation-text">
+                    ${explanationLines.map(line => `<div>${line}</div>`).join('')}
+                </div>
+                <div>
+                    <div class="small text-muted">Matched skills</div>
+                    <div class="tag-list">${matching.length ? matching.map(skill => `<span class="tag-item matching">${skill}</span>`).join('') : '<span class="empty-list">No matches yet</span>'}</div>
+                </div>
+                <div>
+                    <div class="small text-muted">Missing skills</div>
+                    <div class="tag-list">${missing.length ? missing.map(skill => `<span class="tag-item missing">${skill}</span>`).join('') : '<span class="empty-list">None identified</span>'}</div>
+                </div>
+                <div class="recommendation-actions">
+                    <button class="btn btn-sm btn-outline-success" data-feedback="like" data-role="${rec.job_title || ''}">Relevant</button>
+                    <button class="btn btn-sm btn-outline-secondary" data-feedback="dislike" data-role="${rec.job_title || ''}">Not relevant</button>
+                </div>
+            </article>
+        `;
+    }).join('');
+
+    list.innerHTML = cards;
+    list.classList.remove('d-none');
+    empty.classList.add('d-none');
+
+    this.updateSkillGapSummary(Array.from(aggregatedMissing));
+    this.updateRoadmap(Array.from(aggregatedMissing));
+    this.registerFeedbackHandlers();
+};
+
+DashboardModule.parseRequiredSkills = function(requiredSkills) {
+    if (!requiredSkills) return [];
+    if (Array.isArray(requiredSkills)) return requiredSkills;
+    return String(requiredSkills)
+        .split(',')
+        .map(skill => skill.trim())
+        .filter(Boolean);
+};
+
+DashboardModule.updateSkillGapSummary = function(missingSkills) {
+    const container = document.getElementById('skillGapList');
+    if (!container) return;
+
+    if (!missingSkills.length) {
+        container.textContent = 'No gaps calculated yet.';
+        return;
+    }
+
+    container.innerHTML = missingSkills
+        .slice(0, 10)
+        .map(skill => `<span class="tag-item missing">${skill}</span>`)
+        .join('');
+};
+
+DashboardModule.updateRoadmap = function(missingSkills) {
+    const list = document.getElementById('roadmapList');
+    if (!list) return;
+
+    if (!missingSkills.length) {
+        list.innerHTML = '<li>Complete a profile to generate a learning roadmap.</li>';
+        return;
+    }
+
+    list.innerHTML = missingSkills.slice(0, 6)
+        .map(skill => `<li>Learn ${skill} through a focused course and one practical project.</li>`)
+        .join('');
+};
+
+DashboardModule.registerFeedbackHandlers = function() {
+    const buttons = document.querySelectorAll('[data-feedback]');
+    buttons.forEach(button => {
+        button.addEventListener('click', () => {
+            const role = button.getAttribute('data-role') || 'Role';
+            const feedback = button.getAttribute('data-feedback');
+            const label = feedback === 'like' ? 'Relevant' : 'Not relevant';
+
+            this.submitFeedback({
+                role: role,
+                feedback: label
+            });
+        }, { once: true });
+    });
+};
+
+DashboardModule.submitFeedback = function(payload) {
+    fetch(this.config.apiEndpoints.feedback, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify(payload)
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                this.showAlert('error', data.error);
+                return;
+            }
+            this.showAlert('success', 'Feedback saved.');
+            this.loadFeedbackHistory();
+        })
+        .catch(() => {
+            this.showAlert('error', 'Could not save feedback.');
+        });
+};
+
+DashboardModule.loadFeedbackHistory = function() {
+    const list = document.getElementById('feedbackList');
+    if (!list) return;
+
+    fetch(this.config.apiEndpoints.feedbackHistory)
+        .then(response => response.json())
+        .then(data => {
+            if (!data.history || !data.history.length) {
+                list.textContent = 'No feedback captured yet.';
+                return;
+            }
+            list.innerHTML = data.history
+                .map(item => {
+                    const badgeClass = item.feedback === 'Relevant' ? 'success' : 'secondary';
+                    return `
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <span>${item.role}</span>
+                            <span class="badge bg-${badgeClass}">${item.feedback}</span>
+                        </div>
+                    `;
+                })
+                .join('');
+        })
+        .catch(() => {
+            list.textContent = 'Unable to load feedback history.';
+        });
+};
+
+DashboardModule.setProfileStatus = function(statusText) {
+    const statusEl = document.getElementById('profileStatus');
+    if (statusEl) {
+        statusEl.textContent = statusText;
+    }
+};
+
+DashboardModule.showEmptyRecommendations = function() {
+    const list = document.getElementById('recommendationsList');
+    const empty = document.getElementById('recommendationsEmpty');
+    if (list) list.classList.add('d-none');
+    if (empty) empty.classList.remove('d-none');
 };
 
 /**
@@ -376,197 +655,33 @@ DashboardModule.handleUploadError = function(message) {
  * ========================================
  */
 DashboardModule.getPersonalizedRecommendations = function() {
-    this.showLoadingOverlay('Generating personalized recommendations...');
-    
-    fetch(this.config.apiEndpoints.getRecommendations)
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                this.displayRecommendations(data.recommendations);
-            } else {
-                this.showAlert('warning', 'Please upload your resume first to get personalized recommendations.');
-                this.scrollToSection('fileDropZone');
-            }
-        })
-        .catch(error => {
-            this.showAlert('error', 'Failed to load recommendations. Please try again.');
-        })
-        .finally(() => {
-            this.hideLoadingOverlay();
-        });
+    if (!this.state.lastProfile) {
+        this.showAlert('warning', 'Choose a resume or manual profile input first.');
+        this.scrollToSection('input-modes');
+        return;
+    }
+
+    this.submitProfileForAnalysis(this.state.lastProfile, this.state.lastSkills);
 };
 
 DashboardModule.loadRecommendations = function(analysis) {
-    const recommendationsContainer = document.querySelector('.recommendations-placeholder');
-    const recommendationsList = document.getElementById('recommendationsList');
-    
-    if (!recommendationsContainer || !recommendationsList) return;
-    
-    // Hide placeholder
-    recommendationsContainer.classList.add('d-none');
-    
-    // Show recommendations
-    recommendationsList.classList.remove('d-none');
-    recommendationsList.innerHTML = this.generateRecommendationsHTML(analysis.recommendations);
-    
-    // Animate recommendations
-    this.animateRecommendations();
-    
-    // Update state
+    if (!analysis || !analysis.recommendations) {
+        this.showEmptyRecommendations();
+        return;
+    }
+
+    this.renderRecommendations(analysis.recommendations, this.state.lastSkills || []);
     this.state.hasRecommendations = true;
 };
 
-DashboardModule.generateRecommendationsHTML = function(recommendations) {
-    return recommendations.map((rec, index) => `
-        <div class="recommendation-item mb-3 animate-fadeInUp" style="animation-delay: ${index * 0.1}s">
-            <div class="d-flex align-items-center">
-                <div class="rec-icon me-3">
-                    <i class="fas fa-briefcase text-primary"></i>
-                </div>
-                <div class="flex-grow-1">
-                    <h6 class="mb-1">${rec.title}</h6>
-                    <small class="text-muted">${rec.match_percentage}% match</small>
-                    <div class="progress mt-1" style="height: 4px;">
-                        <div class="progress-bar" style="width: ${rec.match_percentage}%"></div>
-                    </div>
-                </div>
-                <div class="rec-actions">
-                    <button class="btn btn-sm btn-outline-primary" onclick="DashboardModule.exploreCareer('${rec.id}')">
-                        <i class="fas fa-external-link-alt"></i>
-                    </button>
-                </div>
-            </div>
-        </div>
-    `).join('');
-};
-
-DashboardModule.animateRecommendations = function() {
-    const recommendations = document.querySelectorAll('.recommendation-item');
-    recommendations.forEach((rec, index) => {
-        setTimeout(() => {
-            rec.classList.add('animate-slideInLeft');
-        }, index * 100);
-    });
-};
-
-/**
- * ========================================
- * QUICK ACTIONS
- * ========================================
- */
-DashboardModule.handleQuickAction = function(action) {
-    switch (action) {
-        case 'job search':
-            this.openJobSearch();
-            break;
-        case 'skill map':
-            this.openSkillMap();
-            break;
-        case 'career path':
-            this.openCareerPath();
-            break;
-        case 'learning':
-            this.openLearning();
-            break;
-        default:
-            console.log('Unknown action:', action);
-    }
-};
-
-DashboardModule.exploreCareer = function(careerId) {
-    this.showModal({
-        title: 'Career Details',
-        body: 'Loading career information...',
-        size: 'lg'
-    });
-    
-    // Load career details (placeholder)
-    setTimeout(() => {
-        this.updateModalContent({
-            body: `
-                <div class="career-details">
-                    <h5>Software Developer</h5>
-                    <p>Match: 95%</p>
-                    <h6>Required Skills:</h6>
-                    <div class="skills-list">
-                        <span class="badge bg-primary me-2">JavaScript</span>
-                        <span class="badge bg-primary me-2">Python</span>
-                        <span class="badge bg-primary me-2">React</span>
-                    </div>
-                    <h6 class="mt-3">Job Opportunities:</h6>
-                    <p>Currently 1,234 open positions in your area.</p>
-                </div>
-            `
-        });
-    }, 1000);
-};
-
 DashboardModule.explorecareers = function() {
-    this.showAlert('info', 'Career exploration feature coming soon!');
+    this.getPersonalizedRecommendations();
 };
-
-DashboardModule.startSkillsAssessment = function() {
-    this.showModal({
-        title: 'Skills Assessment',
-        body: `
-            <div class="assessment-intro text-center">
-                <i class="fas fa-graduation-cap fa-3x text-primary mb-3"></i>
-                <h5>Ready to assess your skills?</h5>
-                <p>This comprehensive assessment will help identify your strengths and growth areas.</p>
-                <p><strong>Duration:</strong> 15-20 minutes</p>
-                <button class="btn btn-primary btn-lg" onclick="DashboardModule.launchAssessment()">
-                    <i class="fas fa-play me-2"></i>Start Assessment
-                </button>
-            </div>
-        `,
-        size: 'lg'
-    });
-};
-
-DashboardModule.launchAssessment = function() {
-    this.hideModal();
-    this.showAlert('info', 'Skills assessment feature coming soon!');
-};
-
 /**
  * ========================================
  * UI UTILITIES
  * ========================================
  */
-DashboardModule.initializeCounters = function() {
-    const counters = document.querySelectorAll('.counter');
-    
-    const observerOptions = {
-        threshold: 0.7
-    };
-    
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                this.animateCounter(entry.target);
-                observer.unobserve(entry.target);
-            }
-        });
-    }, observerOptions);
-    
-    counters.forEach(counter => observer.observe(counter));
-};
-
-DashboardModule.animateCounter = function(element) {
-    const target = parseInt(element.dataset.target) || 0;
-    const duration = this.config.counterAnimationDuration;
-    const step = target / (duration / 16);
-    let current = 0;
-    
-    const timer = setInterval(() => {
-        current += step;
-        if (current >= target) {
-            current = target;
-            clearInterval(timer);
-        }
-        element.textContent = Math.floor(current).toLocaleString();
-    }, 16);
-};
 
 DashboardModule.setupScrollAnimations = function() {
     const observerOptions = {
@@ -582,8 +697,8 @@ DashboardModule.setupScrollAnimations = function() {
         });
     }, observerOptions);
     
-    // Observe all cards and sections
-    document.querySelectorAll('.card, .feature-card').forEach(el => {
+    // Observe major panels
+    document.querySelectorAll('.panel-card, .hero-panel, .recommendation-card, .empty-state').forEach(el => {
         observer.observe(el);
     });
 };
@@ -730,38 +845,7 @@ DashboardModule.hideModal = function() {
  */
 DashboardModule.loadUserData = function() {
     // Load user data from server or local storage
-    this.state.currentUser = {
-        name: 'User',
-        profileCompletion: 75,
-        resumesCount: 0,
-        matchesCount: 0,
-        skillsCount: 0
-    };
-};
-
-DashboardModule.updateStats = function(stats) {
-    if (stats.resumesAnalyzed !== undefined) {
-        this.updateCounter('[data-target]', stats.resumesAnalyzed);
-    }
-    if (stats.careerMatches !== undefined) {
-        this.updateCounter('[data-target]', stats.careerMatches);
-    }
-    if (stats.skillsIdentified !== undefined) {
-        this.updateCounter('[data-target]', stats.skillsIdentified);
-    }
-};
-
-DashboardModule.updateCounter = function(selector, newValue) {
-    const counter = document.querySelector(selector);
-    if (counter) {
-        counter.dataset.target = newValue;
-        this.animateCounter(counter);
-    }
-};
-
-// Global functions for template usage
-window.animateCounters = function() {
-    DashboardModule.initializeCounters();
+    this.state.currentUser = null;
 };
 
 window.DashboardModule = DashboardModule;

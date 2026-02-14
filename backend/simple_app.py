@@ -1644,6 +1644,13 @@ def register_submit():
     return redirect('/dashboard')
 
 
+@app.route('/logout')
+def logout():
+    """SECURITY: Clear session and logout user"""
+    session.clear()  # Clear all session data
+    return redirect('/login')
+
+
 # ============ DASHBOARD NAVIGATION SIDEBAR ============
 def get_sidebar():
     return '''
@@ -1680,7 +1687,7 @@ def get_sidebar():
                 <i class="fas fa-cog" style="width: 20px; margin-right: 10px;"></i> Settings
             </a>
             <hr style="border: none; border-top: 1px solid rgba(255,255,255,0.2); margin: 1rem 0;">
-            <a href="/login" style="display: flex; align-items: center; padding: 1rem 1.5rem; color: rgba(255,255,255,0.8); text-decoration: none; border-left: 4px solid transparent; transition: all 0.3s ease;" onmouseover="this.style.backgroundColor='rgba(255,255,255,0.1)'; this.style.borderLeftColor='#ff6b6b'; this.style.color='white';" onmouseout="this.style.backgroundColor='transparent'; this.style.borderLeftColor='transparent'; this.style.color='rgba(255,255,255,0.8)';">
+            <a href="/logout" style="display: flex; align-items: center; padding: 1rem 1.5rem; color: rgba(255,255,255,0.8); text-decoration: none; border-left: 4px solid transparent; transition: all 0.3s ease;" onmouseover="this.style.backgroundColor='rgba(255,255,255,0.1)'; this.style.borderLeftColor='#ff6b6b'; this.style.color='white';" onmouseout="this.style.backgroundColor='transparent'; this.style.borderLeftColor='transparent'; this.style.color='rgba(255,255,255,0.8)';">
                 <i class="fas fa-sign-out-alt" style="width: 20px; margin-right: 10px;"></i> Logout
             </a>
         </nav>
@@ -1815,9 +1822,14 @@ def get_dashboard_wrapper(title, content):
 
 @app.route('/dashboard')
 def dashboard():
+    # SECURITY: Check if user is logged in
+    if 'user_id' not in session:
+        return redirect('/login')
+    
+    user_name = session.get('user_name', 'User')
     content = '''
     <div class="page-header">
-        <h1><i class="fas fa-home me-3"></i>Welcome Back, Darshan</h1>
+        <h1><i class="fas fa-home me-3"></i>Welcome Back, ''' + user_name + '''</h1>
         <p>Your personalized career intelligence dashboard powered by Cognitive AI</p>
     </div>
     
@@ -1903,7 +1915,15 @@ def dashboard():
 
 @app.route('/dashboard/profile')
 def dashboard_profile():
-    content = '''
+    # SECURITY: Check if user is logged in
+    if 'user_id' not in session:
+        return redirect('/login')
+    
+    # Get actual user data from session
+    user_name = session.get('user_name', 'User')
+    user_email = session.get('user_id', 'user@example.com')  # user_id is the email
+    
+    content = f'''
     <div class="page-header">
         <h1><i class="fas fa-user me-3"></i>My Profile</h1>
         <p>Manage your information for accurate AI career recommendations</p>
@@ -1914,11 +1934,11 @@ def dashboard_profile():
         <div class="row">
             <div class="col-md-6 mb-3">
                 <label style="font-weight: 600; color: #2c3e50;">Name</label>
-                <input type="text" class="form-control" value="Darshan Kumar" style="border: 2px solid #e9ecef; border-radius: 10px; padding: 12px;">
+                <input type="text" class="form-control" value="{user_name}" style="border: 2px solid #e9ecef; border-radius: 10px; padding: 12px;">
             </div>
             <div class="col-md-6 mb-3">
                 <label style="font-weight: 600; color: #2c3e50;">Email</label>
-                <input type="email" class="form-control" value="darshan@example.com" style="border: 2px solid #e9ecef; border-radius: 10px; padding: 12px;">
+                <input type="email" class="form-control" value="{user_email}" style="border: 2px solid #e9ecef; border-radius: 10px; padding: 12px;">
             </div>
             <div class="col-md-6 mb-3">
                 <label style="font-weight: 600; color: #2c3e50;">Education Level</label>
@@ -1962,6 +1982,10 @@ def dashboard_profile():
 
 @app.route('/dashboard/analysis')
 def dashboard_analysis():
+    # SECURITY: Check if user is logged in
+    if 'user_id' not in session:
+        return redirect('/login')
+    
     content = '''
     <div class="page-header">
         <h1><i class="fas fa-chart-bar me-3"></i>AI Career Analysis</h1>
@@ -2027,6 +2051,10 @@ def dashboard_analysis():
 
 @app.route('/dashboard/recommendations')
 def dashboard_recommendations():
+    # SECURITY: Check if user is logged in
+    if 'user_id' not in session:
+        return redirect('/login')
+    
     content = '''
     <div class="page-header">
         <h1><i class="fas fa-star me-3"></i>Career Recommendations</h1>
@@ -2098,6 +2126,10 @@ def dashboard_recommendations():
 
 @app.route('/dashboard/xai')
 def dashboard_xai():
+    # SECURITY: Check if user is logged in
+    if 'user_id' not in session:
+        return redirect('/login')
+    
     content = '''
     <div class="page-header">
         <h1><i class="fas fa-lightbulb me-3"></i>Explainable AI (XAI)</h1>
@@ -2158,6 +2190,10 @@ def dashboard_xai():
 
 @app.route('/dashboard/skill-gap')
 def dashboard_skill_gap():
+    # SECURITY: Check if user is logged in
+    if 'user_id' not in session:
+        return redirect('/login')
+    
     content = '''
     <div class="page-header">
         <h1><i class="fas fa-graduation-cap me-3"></i>Skill Gap & Learning Path</h1>
@@ -2214,6 +2250,10 @@ def dashboard_skill_gap():
 
 @app.route('/dashboard/roadmap')
 def dashboard_roadmap():
+    # SECURITY: Check if user is logged in
+    if 'user_id' not in session:
+        return redirect('/login')
+    
     content = '''
     <div class="page-header">
         <h1><i class="fas fa-map me-3"></i>Career Roadmap</h1>
@@ -2287,6 +2327,10 @@ def dashboard_roadmap():
 
 @app.route('/dashboard/reports')
 def dashboard_reports():
+    # SECURITY: Check if user is logged in
+    if 'user_id' not in session:
+        return redirect('/login')
+    
     content = '''
     <div class="page-header">
         <h1><i class="fas fa-file-pdf me-3"></i>Reports & Insights</h1>
@@ -2325,7 +2369,11 @@ def dashboard_reports():
     </div>
     '''
     return get_dashboard_wrapper('Reports & Insights', content)
-
+# SECURITY: Check if user is logged in
+    if 'user_id' not in session:
+        return redirect('/login')
+    
+    
 
 @app.route('/dashboard/settings')
 def dashboard_settings():

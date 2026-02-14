@@ -1,9 +1,9 @@
 {% extends "layout/auth_base.html" %}
 
-{% block title %}Login - Cognitive Career AI{% endblock %}
+{% block title %}Login - CareerAI{% endblock %}
 
 {% block auth_title %}Account Login{% endblock %}
-{% block auth_subtitle %}Sign in to access your cognitive AI career analysis{% endblock %}
+{% block auth_subtitle %}Sign in to access your skill-based career insights{% endblock %}
 
 {% block auth_content %}
 <form method="POST" action="/login" id="loginForm" novalidate>
@@ -82,9 +82,9 @@
 
 {% block auth_links %}
 <div class="small text-muted">
-    <a href="#" class="text-decoration-none me-3">Privacy Policy</a>
-    <a href="#" class="text-decoration-none me-3">Terms of Service</a>
-    <a href="#" class="text-decoration-none">Support</a>
+    <a href="/" class="text-decoration-none me-3">Home</a>
+    <a href="/register" class="text-decoration-none me-3">Get Started</a>
+    <a href="/forgot-password" class="text-decoration-none">Reset Password</a>
 </div>
 {% endblock %}
 

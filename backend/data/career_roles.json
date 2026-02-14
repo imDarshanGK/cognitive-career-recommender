@@ -1,0 +1,44 @@
+[
+  {
+    "role": "Data Scientist",
+    "required_skills": ["python", "machine learning", "statistics", "sql"],
+    "experience_level": "entry",
+    "related_skills_to_learn": ["data visualization", "deep learning", "feature engineering"]
+  },
+  {
+    "role": "Backend Developer",
+    "required_skills": ["python", "django", "rest api", "sql"],
+    "experience_level": "entry",
+    "related_skills_to_learn": ["system design", "authentication", "testing"]
+  },
+  {
+    "role": "Frontend Developer",
+    "required_skills": ["javascript", "html", "css", "react"],
+    "experience_level": "entry",
+    "related_skills_to_learn": ["state management", "accessibility", "testing"]
+  },
+  {
+    "role": "Machine Learning Engineer",
+    "required_skills": ["python", "machine learning", "model deployment", "docker"],
+    "experience_level": "mid",
+    "related_skills_to_learn": ["mlops", "cloud platforms", "monitoring"]
+  },
+  {
+    "role": "Data Analyst",
+    "required_skills": ["sql", "excel", "data analysis", "data visualization"],
+    "experience_level": "entry",
+    "related_skills_to_learn": ["dashboarding", "statistics", "python"]
+  },
+  {
+    "role": "Product Manager",
+    "required_skills": ["strategy", "analytics", "communication", "roadmapping"],
+    "experience_level": "mid",
+    "related_skills_to_learn": ["market research", "stakeholder management", "prioritization"]
+  },
+  {
+    "role": "DevOps Engineer",
+    "required_skills": ["linux", "docker", "ci/cd", "cloud platforms"],
+    "experience_level": "mid",
+    "related_skills_to_learn": ["kubernetes", "infrastructure as code", "monitoring"]
+  }
+]

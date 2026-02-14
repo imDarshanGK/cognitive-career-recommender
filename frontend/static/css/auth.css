@@ -12,6 +12,7 @@ Specialized styles for login, register, and auth pages
   flex-direction: column;
   position: relative;
   overflow-x: hidden;
+  font-family: 'Work Sans', sans-serif;
 }
 
 .auth-navbar {
@@ -35,7 +36,7 @@ Specialized styles for login, register, and auth pages
 }
 
 .auth-brand:hover {
-  color: var(--bs-primary);
+  color: #1b3a6b;
 }
 
 /* ========== AUTH BACKGROUND ========== */
@@ -45,7 +46,8 @@ Specialized styles for login, register, and auth pages
   left: 0;
   right: 0;
   bottom: 0;
-  background: #f5f7fb;
+  background: radial-gradient(circle at top right, rgba(21, 166, 160, 0.12), transparent 55%),
+    linear-gradient(160deg, rgba(27, 58, 107, 0.08), rgba(242, 185, 75, 0.08));
   z-index: 1;
 }
 
@@ -109,6 +111,7 @@ Specialized styles for login, register, and auth pages
   font-size: 1.9rem;
   font-weight: 700;
   color: #111827;
+  font-family: 'Space Grotesk', sans-serif;
   margin-bottom: 0.5rem;
 }
 
@@ -158,8 +161,8 @@ Specialized styles for login, register, and auth pages
 .auth-card .form-control:focus,
 .auth-card .form-select:focus {
   background: #ffffff;
-  border-color: #4f46e5;
-  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
+  border-color: #1b3a6b;
+  box-shadow: 0 0 0 3px rgba(27, 58, 107, 0.12);
 }
 
 [data-bs-theme="dark"] .auth-card .form-control:focus,
@@ -199,18 +202,18 @@ Specialized styles for login, register, and auth pages
 
 /* ========== AUTH BUTTONS ========== */
 .auth-card .btn-primary {
-  background: #4f46e5;
+  background: linear-gradient(135deg, #1b3a6b, #275395);
   border: none;
   font-weight: 600;
   letter-spacing: 0.01em;
-  box-shadow: 0 6px 16px rgba(79, 70, 229, 0.2);
+  box-shadow: 0 8px 18px rgba(27, 58, 107, 0.2);
   transition: all 0.2s ease;
 }
 
 .auth-card .btn-primary:hover {
-  background: #4338ca;
+  background: linear-gradient(135deg, #143257, #1f4c88);
   transform: translateY(-1px);
-  box-shadow: 0 10px 22px rgba(79, 70, 229, 0.25);
+  box-shadow: 0 12px 26px rgba(27, 58, 107, 0.25);
 }
 
 .auth-card .btn-primary:active {
@@ -233,8 +236,8 @@ Specialized styles for login, register, and auth pages
 
 .auth-card .btn-outline-secondary:hover {
   background: rgba(59, 130, 246, 0.1);
-  border-color: #3b82f6;
-  color: #3b82f6;
+  border-color: #1b3a6b;
+  color: #1b3a6b;
   transform: translateY(-1px);
 }
 
@@ -277,8 +280,8 @@ Specialized styles for login, register, and auth pages
 }
 
 .auth-card .form-check-input:checked {
-  background: #4f46e5;
-  border-color: #4f46e5;
+  background: #1b3a6b;
+  border-color: #1b3a6b;
 }
 
 .auth-card .form-check-label {
@@ -302,19 +305,19 @@ Specialized styles for login, register, and auth pages
 }
 
 .auth-links a:hover {
-  color: #4f46e5;
+  color: #1b3a6b;
   text-decoration: underline;
 }
 
 .auth-card a:not(.btn) {
-  color: #4f46e5;
+  color: #1b3a6b;
   font-weight: 500;
   text-decoration: none;
   transition: all 0.2s ease;
 }
 
 .auth-card a:not(.btn):hover {
-  color: #4338ca;
+  color: #1f4c88;
   text-decoration: underline;
 }
 

@@ -7,8 +7,10 @@ from flask import Flask, render_template, request, jsonify, session, redirect, u
 import os
 import hashlib
 import secrets
+import sqlite3
 from datetime import datetime
 from ai_engine.cognitive_engine import CognitiveRecommendationEngine
+from services.career_matcher import match_roles
 from nlp_processor.resume_analyzer import ResumeAnalyzer
 from utils.data_processor import DataProcessor
 from config import Config
@@ -20,6 +22,50 @@ app.config.from_object(Config)
 
 # Set proper secret key for sessions
 app.secret_key = secrets.token_hex(32)
+
+FEEDBACK_DB = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'instance', 'feedback.db')
+
+
+def _init_feedback_db():
+    os.makedirs(os.path.dirname(FEEDBACK_DB), exist_ok=True)
+    with sqlite3.connect(FEEDBACK_DB) as conn:
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS feedback (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id TEXT NOT NULL,
+                role TEXT NOT NULL,
+                feedback TEXT NOT NULL,
+                created_at TEXT NOT NULL
+            )
+            """
+        )
+
+
+def _save_feedback(user_id, role, feedback):
+    with sqlite3.connect(FEEDBACK_DB) as conn:
+        conn.execute(
+            "INSERT INTO feedback (user_id, role, feedback, created_at) VALUES (?, ?, ?, ?)",
+            (user_id, role, feedback, datetime.utcnow().isoformat())
+        )
+
+
+def _get_feedback_history(user_id, limit=20):
+    with sqlite3.connect(FEEDBACK_DB) as conn:
+        cursor = conn.execute(
+            "SELECT role, feedback, created_at FROM feedback WHERE user_id = ? ORDER BY id DESC LIMIT ?",
+            (user_id, limit)
+        )
+        rows = cursor.fetchall()
+
+    return [
+        {
+            'role': row[0],
+            'feedback': row[1],
+            'created_at': row[2]
+        }
+        for row in rows
+    ]
 
 # Initialize AI components with error handling
 try:
@@ -40,6 +86,8 @@ except Exception as e:
     print(f"Warning: Could not initialize DataProcessor: {e}")
     data_processor = None
 
+_init_feedback_db()
+
 # In-memory user storage (replace with database in production)
 users_db = {
     'admin@example.com': {
@@ -57,6 +105,50 @@ def hash_password(password):
 def verify_password(password, password_hash):
     """Verify password against hash"""
     return hash_password(password) == password_hash
+
+
+def _build_structured_profile(resume_data):
+    """Normalize resume analyzer output into a simple structured profile"""
+    if not resume_data or isinstance(resume_data, dict) is False:
+        return {}
+
+    raw = resume_data
+    if 'data' in resume_data:
+        raw = resume_data.get('data', {})
+
+    skills = []
+    if 'skills' in resume_data:
+        if isinstance(resume_data['skills'], dict):
+            skills.extend(resume_data['skills'].get('technical_skills', []))
+            skills.extend(resume_data['skills'].get('soft_skills', []))
+        elif isinstance(resume_data['skills'], list):
+            skills.extend(resume_data['skills'])
+
+    if raw.get('skills'):
+        skills.extend(raw.get('skills'))
+
+    skills = [str(skill).strip() for skill in skills if str(skill).strip()]
+
+    education = {}
+    if resume_data.get('education'):
+        education = resume_data.get('education')
+    elif raw.get('education'):
+        education = raw.get('education')
+
+    experience = []
+    if resume_data.get('experience'):
+        experience = resume_data.get('experience')
+    elif raw.get('experience'):
+        experience = raw.get('experience')
+
+    interests = resume_data.get('interests') or raw.get('interests') or []
+
+    return {
+        'skills': skills,
+        'education': education,
+        'experience': experience,
+        'interests': interests
+    }
 
 def login_required(f):
     """Decorator to require login for protected routes"""
@@ -83,6 +175,11 @@ def login():
         
         if not email or not password:
             flash('Email and password are required', 'error')
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({
+                    'success': False,
+                    'message': 'Email and password are required'
+                }), 400
             return render_template('auth/login.html'), 400
         
         user = users_db.get(email)
@@ -206,7 +303,11 @@ def upload_resume():
         
         # Process resume using NLP
         resume_data = resume_analyzer.extract_information(file)
-        return jsonify(resume_data)
+        structured_profile = _build_structured_profile(resume_data)
+        return jsonify({
+            'resume_data': resume_data,
+            'structured_profile': structured_profile
+        })
     
     return render_template('upload_resume.html')
 
@@ -215,34 +316,15 @@ def upload_resume():
 def analyze_profile():
     """Analyze user profile and generate recommendations"""
     user_data = request.get_json()
-    
-    # Add user context from session
-    user_data['user_id'] = session.get('user_id')
-    user_data['user_info'] = users_db.get(session['user_id'], {})
-    
-    # Cognitive AI processing flow
-    # 1. Observe - Collect user input
-    observed_data = cognitive_engine.observe(user_data)
-    
-    # 2. Understand - Process and contextualize
-    understood_context = cognitive_engine.understand(observed_data)
-    
-    # 3. Analyze - Feature extraction and pattern recognition
-    analyzed_features = cognitive_engine.analyze(understood_context)
-    
-    # 4. Reason - Apply cognitive reasoning
-    reasoning_results = cognitive_engine.reason(analyzed_features)
-    
-    # 5. Decide - Generate recommendations
-    recommendations = cognitive_engine.decide(reasoning_results)
-    
-    # 6. Explain - Provide explainable AI output
-    explanations = cognitive_engine.explain(recommendations)
-    
+
+    if not user_data:
+        return jsonify({'error': 'Missing profile data'}), 400
+
+    match_results = match_roles(user_data)
+
     return jsonify({
-        'recommendations': recommendations,
-        'explanations': explanations,
-        'reasoning_flow': reasoning_results
+        'recommendations': match_results['recommendations'],
+        'normalized_profile': match_results['normalized_profile']
     })
 
 @app.route('/feedback', methods=['POST'])
@@ -251,14 +333,34 @@ def collect_feedback():
     """Collect user feedback for adaptive learning"""
     feedback_data = request.get_json()
     
-    # Add user context
-    feedback_data['user_id'] = session.get('user_id')
+    if not feedback_data:
+        return jsonify({'error': 'Missing feedback data'}), 400
+
+    user_id = session.get('user_id')
+    role = feedback_data.get('role', '').strip()
+    feedback = feedback_data.get('feedback', '').strip()
+
+    if not role or not feedback:
+        return jsonify({'error': 'Role and feedback are required'}), 400
+
+    _save_feedback(user_id, role, feedback)
+
+    feedback_data['user_id'] = user_id
     feedback_data['timestamp'] = datetime.utcnow().isoformat()
-    
-    # Learn from feedback
-    cognitive_engine.learn(feedback_data)
-    
+
+    if cognitive_engine:
+        cognitive_engine.learn(feedback_data)
+
     return jsonify({'status': 'Feedback received and processed'})
+
+
+@app.route('/api/feedback', methods=['GET'])
+@login_required
+def get_feedback_history():
+    """Return feedback history for the current user"""
+    user_id = session.get('user_id')
+    history = _get_feedback_history(user_id)
+    return jsonify({'history': history})
 
 @app.route('/api/skills', methods=['GET'])
 def get_skills_data():
