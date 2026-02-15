@@ -315,6 +315,8 @@ DashboardModule.handleUploadSuccess = function(response) {
     }
 
     this.setProfileStatus('Resume parsed');
+    this.state.lastProfile = profilePayload;
+    this.state.lastSkills = profilePayload.skills || [];
     this.submitProfileForAnalysis(profilePayload, profilePayload.skills || []);
 };
 

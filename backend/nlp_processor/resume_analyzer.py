@@ -205,7 +205,8 @@ class ResumeAnalyzer:
             pdf_reader = PyPDF2.PdfReader(file)
             text = ''
             for page in pdf_reader.pages:
-                text += page.extract_text()
+                extracted = page.extract_text() or ''
+                text += extracted
             return text
         except Exception:
             return ''
@@ -386,27 +387,40 @@ class ResumeAnalyzer:
     
     def _generate_profile_summary(self, text: str) -> Dict[str, Any]:
         """Generate a summary of the resume profile"""
-        # Word count and basic statistics
-        words = word_tokenize(text)
-        sentences = sent_tokenize(text)
-        
-        # Calculate readability score (simplified)
+        # Word count and basic statistics with safe fallbacks
+        try:
+            if NLTK_AVAILABLE and word_tokenize and sent_tokenize:
+                words = word_tokenize(text)
+                sentences = sent_tokenize(text)
+            else:
+                raise ValueError('NLTK tokenizers unavailable')
+        except Exception:
+            words = re.findall(r'\b\w+\b', text)
+            sentences = [s for s in re.split(r'[.!?]+', text) if s.strip()]
+
         avg_words_per_sentence = len(words) / max(1, len(sentences))
-        
-        # Extract key phrases using TextBlob
-        blob = TextBlob(text)
-        noun_phrases = [str(phrase) for phrase in blob.noun_phrases[:10]]
-        
-        summary = {
+
+        noun_phrases = []
+        sentiment_polarity = 0.0
+        sentiment_subjectivity = 0.0
+
+        if TEXTBLOB_AVAILABLE:
+            try:
+                blob = TextBlob(text)
+                noun_phrases = [str(phrase) for phrase in blob.noun_phrases[:10]]
+                sentiment_polarity = blob.sentiment.polarity
+                sentiment_subjectivity = blob.sentiment.subjectivity
+            except Exception:
+                pass
+
+        return {
             'word_count': len(words),
             'sentence_count': len(sentences),
             'avg_words_per_sentence': round(avg_words_per_sentence, 2),
             'key_phrases': noun_phrases,
-            'sentiment_polarity': blob.sentiment.polarity,
-            'sentiment_subjectivity': blob.sentiment.subjectivity
+            'sentiment_polarity': sentiment_polarity,
+            'sentiment_subjectivity': sentiment_subjectivity
         }
-        
-        return summary
     
     def _perform_nlp_analysis(self, text: str) -> Dict[str, Any]:
         """Perform advanced NLP analysis using spaCy"""
