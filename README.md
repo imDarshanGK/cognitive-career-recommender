@@ -1,45 +1,37 @@
-# Cognitive Career & Job Recommendation System
+# CareerAI - Career Recommendation System
 
-A web application for career guidance and job recommendations.
+A skill-based career matching platform that helps users find suitable roles based on resume or manual input.
 
 ## Features
 
-- Career recommendations
-- Job suggestions
-- User authentication
-- Responsive design
+- Resume upload and parsing (PDF, DOCX)
+- Manual profile input mode
+- Skill-based career matching against 7 role types
+- Explainable recommendations with skill gaps
+- Learning roadmap generation
+- Feedback tracking
 
-## Technology Stack
+## Quick Start
 
-- HTML5
-- CSS3
-- JavaScript
-- Font Awesome
-- Inter Font
-
-## Project Structure
-
-```
-cognitive-career-recommender/
-├── frontend/
-│   ├── index.html
-│   ├── auth.html
-│   ├── style.css
-│   ├── auth-style.css
-│   ├── script.js
-│   └── auth-script.js
-└── README.md
+```bash
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+python backend/app.py
 ```
 
-## Getting Started
+Visit http://127.0.0.1:5000
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/imDarshanGK/cognitive-career-recommender.git
-   ```
+Test: admin@example.com / admin123
 
-2. Open `frontend/index.html` in your browser
+## Tech Stack
 
-## Team
+- Flask 3.0.0
+- SQLite (feedback storage)
+- Bootstrap 5.3
+- Vanilla JavaScript
 
-Team AKATSUKI
+## Deployment
+
+Docker: `docker-compose up`  
+Or: Render.com, Railway.app, DigitalOcean, AWS

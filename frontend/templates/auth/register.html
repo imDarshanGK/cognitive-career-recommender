@@ -1,0 +1,163 @@
+{% extends "layout/auth_base.html" %}
+
+{% block title %}Sign Up - CareerAI{% endblock %}
+
+{% block auth_title %}Create Your Account{% endblock %}
+{% block auth_subtitle %}Register to access skill-based career recommendations{% endblock %}
+
+{% block auth_content %}
+<form method="POST" action="/register" id="registerForm" novalidate>
+    
+    <!-- Name Fields -->
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <label for="first_name" class="form-label">
+                <i class="fas fa-user me-1"></i>First Name
+            </label>
+            <input type="text" 
+                   class="form-control form-control-lg" 
+                   id="first_name" 
+                   name="first_name" 
+                   placeholder="John"
+                   value="{{ request.form.first_name }}"
+                   required>
+            <div class="invalid-feedback" id="first_name-error"></div>
+        </div>
+        <div class="col-md-6">
+            <label for="last_name" class="form-label">
+                <i class="fas fa-user me-1"></i>Last Name
+            </label>
+            <input type="text" 
+                   class="form-control form-control-lg" 
+                   id="last_name" 
+                   name="last_name" 
+                   placeholder="Doe"
+                   value="{{ request.form.last_name }}"
+                   required>
+            <div class="invalid-feedback" id="last_name-error"></div>
+        </div>
+    </div>
+    
+    <!-- Email Field -->
+    <div class="mb-3">
+        <label for="email" class="form-label">
+            <i class="fas fa-envelope me-1"></i>Email Address
+        </label>
+        <input type="email" 
+               class="form-control form-control-lg" 
+               id="email" 
+               name="email" 
+               placeholder="john.doe@example.com"
+               value="{{ request.form.email }}"
+               required>
+        <div class="invalid-feedback" id="email-error"></div>
+        <div class="form-text">Your email is used only for account access.</div>
+    </div>
+    
+    <!-- Password Fields -->
+    <div class="mb-3">
+        <label for="password" class="form-label">
+            <i class="fas fa-lock me-1"></i>Password
+        </label>
+        <div class="input-group">
+            <input type="password" 
+                   class="form-control form-control-lg" 
+                   id="password" 
+                   name="password" 
+                   placeholder="Create a strong password"
+                   required
+                   minlength="8">
+            <button type="button" class="btn btn-outline-secondary" id="togglePassword" data-target="password">
+                <i class="fas fa-eye"></i>
+            </button>
+        </div>
+        <div class="invalid-feedback" id="password-error"></div>
+        
+        <!-- Password Strength Indicator -->
+        <div class="password-strength mt-2">
+            <div class="progress" style="height: 4px;">
+                <div class="progress-bar" id="passwordStrengthBar" role="progressbar" style="width: 0%"></div>
+            </div>
+            <small class="form-text" id="passwordStrengthText">Password strength: Weak</small>
+        </div>
+    </div>
+    
+    <div class="mb-3">
+        <label for="confirm_password" class="form-label">
+            <i class="fas fa-lock me-1"></i>Confirm Password
+        </label>
+        <input type="password" 
+               class="form-control form-control-lg" 
+               id="confirm_password" 
+               name="confirm_password" 
+               placeholder="Confirm your password"
+               required>
+        <div class="invalid-feedback" id="confirm_password-error"></div>
+    </div>
+    
+    <!-- Professional Info -->
+    <div class="mb-3">
+        <label for="profession" class="form-label">
+            <i class="fas fa-briefcase me-1"></i>Current Profession
+        </label>
+        <select class="form-select form-select-lg" id="profession" name="profession" required>
+            <option value="">Select your profession</option>
+            <option value="Software Developer">Software Developer</option>
+            <option value="Data Scientist">Data Scientist</option>
+            <option value="Product Manager">Product Manager</option>
+            <option value="Designer">Designer</option>
+            <option value="Marketing Specialist">Marketing Specialist</option>
+            <option value="Sales Professional">Sales Professional</option>
+            <option value="Business Analyst">Business Analyst</option>
+            <option value="Consultant">Consultant</option>
+            <option value="Engineer">Engineer</option>
+            <option value="Research Scientist">Research Scientist</option>
+            <option value="Student">Student</option>
+            <option value="Other">Other</option>
+        </select>
+        <div class="invalid-feedback" id="profession-error"></div>
+    </div>
+    
+    <!-- Terms and Privacy -->
+    <div class="mb-4">
+        <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="terms_accepted" name="terms_accepted" required>
+            <label class="form-check-label" for="terms_accepted">
+                I agree to the Terms of Service and Privacy Policy
+            </label>
+            <div class="invalid-feedback" id="terms_accepted-error"></div>
+        </div>
+    </div>
+    
+    <!-- Register Button -->
+    <button type="submit" class="btn btn-primary btn-lg w-100 mb-3" id="registerBtn">
+        <span class="btn-text">
+            <i class="fas fa-user-plus me-2"></i>Create Account
+        </span>
+        <span class="btn-loading d-none">
+            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+            Creating Account...
+        </span>
+    </button>
+    
+</form>
+{% endblock %}
+
+{% block auth_footer %}
+<div class="text-center">
+    <p class="text-muted mb-0">
+        Already have an account?
+        <a href="/login" class="text-decoration-none fw-semibold">Sign in here</a>
+    </p>
+</div>
+{% endblock %}
+
+{% block auth_links %}
+<div class="small text-muted">
+    <a href="/" class="text-decoration-none me-3">Home</a>
+    <a href="/login" class="text-decoration-none me-3">Login</a>
+    <a href="/forgot-password" class="text-decoration-none">Reset Password</a>
+</div>
+{% endblock %}
+
+{% block extra_js %}{% endblock %}

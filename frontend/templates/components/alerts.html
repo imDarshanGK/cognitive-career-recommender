@@ -1,0 +1,120 @@
+<!-- Flash Messages Container -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        <div class="flash-messages" id="flash-messages">
+            {% for category, message in messages %}
+                <div class="alert alert-{{ 'danger' if category == 'error' else ('warning' if category == 'warning' else ('info' if category == 'info' else 'success')) }} alert-dismissible fade show" role="alert">
+                    <div class="d-flex align-items-center">
+                        {% if category == 'error' %}
+                            <i class="fas fa-exclamation-circle me-2"></i>
+                        {% elif category == 'warning' %}
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                        {% elif category == 'info' %}
+                            <i class="fas fa-info-circle me-2"></i>
+                        {% else %}
+                            <i class="fas fa-check-circle me-2"></i>
+                        {% endif %}
+                        <div class="flex-grow-1">
+                            <strong>
+                                {% if category == 'error' %}Error!
+                                {% elif category == 'warning' %}Warning!
+                                {% elif category == 'info' %}Info:
+                                {% else %}Success!
+                                {% endif %}
+                            </strong>
+                            {{ message }}
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+{% endwith %}
+
+<!-- JavaScript for Auto-dismiss -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-dismiss success alerts after 5 seconds
+    const alerts = document.querySelectorAll('.alert-success, .alert-info');
+    alerts.forEach(alert => {
+        setTimeout(() => {
+            const bsAlert = new bootstrap.Alert(alert);
+            bsAlert.close();
+        }, 5000);
+    });
+    
+    // Keep error and warning alerts until manually dismissed
+    // They're important and shouldn't auto-hide
+});
+</script>
+
+<!-- CSS for enhanced styling -->
+<style>
+.flash-messages {
+    position: relative;
+    z-index: 1050;
+}
+
+.flash-messages .alert {
+    margin-bottom: 0.5rem;
+    border: none;
+    border-radius: 0.5rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.flash-messages .alert:last-child {
+    margin-bottom: 0;
+}
+
+/* Toast-style positioning for auth pages */
+.auth-page .flash-messages {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    width: auto;
+    max-width: 400px;
+    z-index: 1060;
+}
+
+/* Animation for new alerts */
+.flash-messages .alert {
+    animation: slideInRight 0.3s ease-out;
+}
+
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translateX(100%);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* Dark theme support */
+[data-bs-theme="dark"] .alert-success {
+    --bs-alert-bg: #0f2419;
+    --bs-alert-border-color: #1c4d2e;
+    --bs-alert-color: #75dd99;
+}
+
+[data-bs-theme="dark"] .alert-info {
+    --bs-alert-bg: #032830;
+    --bs-alert-border-color: #055d6b;
+    --bs-alert-color: #76e5fc;
+}
+
+[data-bs-theme="dark"] .alert-warning {
+    --bs-alert-bg: #332701;
+    --bs-alert-border-color: #664d03;
+    --bs-alert-color: #ffda6a;
+}
+
+[data-bs-theme="dark"] .alert-danger {
+    --bs-alert-bg: #2c0b0e;
+    --bs-alert-border-color: #58151c;
+    --bs-alert-color: #ea868f;
+}
+</style>

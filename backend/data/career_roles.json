@@ -1,0 +1,86 @@
+[
+  {
+    "role": "Frontend Developer",
+    "required_skills": ["javascript", "html", "css", "react"],
+    "experience_level": "entry",
+    "related_skills_to_learn": ["state management", "accessibility", "testing", "typescript"]
+  },
+  {
+    "role": "Backend Developer",
+    "required_skills": ["python", "django", "rest api", "sql"],
+    "experience_level": "entry",
+    "related_skills_to_learn": ["system design", "authentication", "testing", "microservices"]
+  },
+  {
+    "role": "Full Stack Developer",
+    "required_skills": ["javascript", "python", "react", "sql", "html"],
+    "experience_level": "mid",
+    "related_skills_to_learn": ["devops", "docker", "system design", "testing"]
+  },
+  {
+    "role": "Data Scientist",
+    "required_skills": ["python", "machine learning", "statistics", "sql"],
+    "experience_level": "entry",
+    "related_skills_to_learn": ["data visualization", "deep learning", "feature engineering"]
+  },
+  {
+    "role": "Machine Learning Engineer",
+    "required_skills": ["python", "machine learning", "model deployment", "docker"],
+    "experience_level": "mid",
+    "related_skills_to_learn": ["mlops", "cloud platforms", "kubernetes"]
+  },
+  {
+    "role": "Data Analyst",
+    "required_skills": ["sql", "excel", "data analysis", "statistics"],
+    "experience_level": "entry",
+    "related_skills_to_learn": ["dashboarding", "python", "data visualization"]
+  },
+  {
+    "role": "DevOps Engineer",
+    "required_skills": ["linux", "docker", "ci/cd", "cloud platforms"],
+    "experience_level": "mid",
+    "related_skills_to_learn": ["kubernetes", "terraform", "monitoring", "ansible"]
+  },
+  {
+    "role": "Mobile Developer",
+    "required_skills": ["javascript", "react", "swift", "kotlin"],
+    "experience_level": "entry",
+    "related_skills_to_learn": ["mobile ui/ux", "testing", "apis", "firebase"]
+  },
+  {
+    "role": "Cloud Architect",
+    "required_skills": ["aws", "azure", "gcp", "docker", "kubernetes"],
+    "experience_level": "senior",
+    "related_skills_to_learn": ["terraform", "cost optimization", "security", "monitoring"]
+  },
+  {
+    "role": "QA Engineer",
+    "required_skills": ["testing", "automation", "python", "sql"],
+    "experience_level": "entry",
+    "related_skills_to_learn": ["javascript", "ci/cd", "performance testing", "security testing"]
+  },
+  {
+    "role": "Software Architect",
+    "required_skills": ["system design", "python", "java", "microservices"],
+    "experience_level": "senior",
+    "related_skills_to_learn": ["devops", "kubernetes", "cloud platforms", "scalability"]
+  },
+  {
+    "role": "Security Engineer",
+    "required_skills": ["linux", "networking", "python", "security"],
+    "experience_level": "mid",
+    "related_skills_to_learn": ["cryptography", "penetration testing", "compliance", "cloud security"]
+  },
+  {
+    "role": "Product Manager",
+    "required_skills": ["analytics", "communication", "strategy", "sql"],
+    "experience_level": "mid",
+    "related_skills_to_learn": ["market research", "data analysis", "roadmapping", "prototyping"]
+  },
+  {
+    "role": "Technical Lead",
+    "required_skills": ["java", "python", "system design", "leadership"],
+    "experience_level": "senior",
+    "related_skills_to_learn": ["mentoring", "architecture", "devops", "cloud platforms"]
+  }
+]

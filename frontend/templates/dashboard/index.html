@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - CareerAI</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Work+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+    <link href="{{ url_for('static', filename='css/main.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/dashboard.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/animations.css') }}" rel="stylesheet">
+</head>
+<body class="dashboard-body">
+    <div class="dashboard-shell">
+        <aside class="dashboard-sidebar">
+            <div class="sidebar-brand">
+                <div class="brand-mark"><i class="fas fa-brain"></i></div>
+                <div>
+                    <div class="brand-title">CareerAI</div>
+                    <div class="brand-subtitle">Skill-Based Matching</div>
+                </div>
+            </div>
+
+            <div class="sidebar-user">
+                <div class="user-avatar">
+                    <i class="fas fa-user-astronaut"></i>
+                </div>
+                <div>
+                    <div class="user-name">{{ user.first_name }} {{ user.last_name }}</div>
+                    <div class="user-email">{{ user.email }}</div>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <a class="nav-item active" href="#overview" id="dashboardNav">
+                    <i class="fas fa-grid-2"></i>
+                    Dashboard
+                </a>
+                <a class="nav-item" href="#input-modes" id="uploadResumeNav">
+                    <i class="fas fa-file-arrow-up"></i>
+                    Upload Resume
+                </a>
+                <a class="nav-item" href="#manual-profile" id="manualProfileNav">
+                    <i class="fas fa-pen-to-square"></i>
+                    Manual Profile
+                </a>
+                <a class="nav-item" href="#career-matches" id="careersNav">
+                    <i class="fas fa-compass-drafting"></i>
+                    Career Matches
+                </a>
+                <a class="nav-item" href="#skill-gap" id="skillsNav">
+                    <i class="fas fa-layer-group"></i>
+                    Skill Gap
+                </a>
+                <a class="nav-item" href="#roadmap" id="roadmapNav">
+                    <i class="fas fa-route"></i>
+                    Learning Roadmap
+                </a>
+                <a class="nav-item" href="#feedback" id="feedbackNav">
+                    <i class="fas fa-message"></i>
+                    Feedback History
+                </a>
+                <a class="nav-item" href="/logout">
+                    <i class="fas fa-right-from-bracket"></i>
+                    Logout
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="status-chip">
+                    <span class="status-dot"></span>
+                    System ready for profile input
+                </div>
+            </div>
+        </aside>
+
+        <main class="dashboard-main">
+            <section class="hero-panel" id="overview">
+                <div class="hero-content">
+                    <p class="hero-eyebrow">Career Matching Dashboard</p>
+                    <h1>Welcome back, {{ user.first_name }}.</h1>
+                    <p class="hero-subtitle">
+                        Upload a resume or enter details manually. Both routes create the same structured profile for
+                        skill matching, explainable reasoning, and a learning roadmap.
+                    </p>
+                    <div class="hero-actions">
+                        <button class="btn btn-primary hero-btn" id="getStartedBtn">
+                            <i class="fas fa-bolt me-2"></i>Generate Matches
+                        </button>
+                        <a class="btn btn-outline-light hero-btn" href="#input-modes">
+                            <i class="fas fa-arrow-down me-2"></i>Choose Input Mode
+                        </a>
+                    </div>
+                </div>
+                <div class="hero-meta">
+                    <div class="meta-card">
+                        <h5>Profile Status</h5>
+                        <p class="meta-value" id="profileStatus">Awaiting input</p>
+                        <p class="meta-note">Complete resume or manual profile to unlock insights.</p>
+                    </div>
+                    <div class="meta-card">
+                        <h5>Matching Engine</h5>
+                        <p class="meta-value">Skill overlap scoring</p>
+                        <p class="meta-note">Transparent calculations, no fabricated metrics.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="input-grid" id="input-modes">
+                <div class="panel-card" id="resume-upload">
+                    <div class="panel-header">
+                        <div>
+                            <h3>Resume Upload Mode</h3>
+                            <p>PDF and DOCX supported. Resume text is parsed into skills, education, and experience.</p>
+                        </div>
+                        <span class="panel-tag">Mode A</span>
+                    </div>
+                    <div class="file-drop-zone" id="fileDropZone">
+                        <div class="drop-zone-content">
+                            <i class="fas fa-cloud-upload-alt drop-icon"></i>
+                            <h6>Drop resume here</h6>
+                            <p>or click to browse</p>
+                            <input type="file" id="resumeUpload" class="d-none" accept=".pdf,.doc,.docx">
+                        </div>
+                        <div class="upload-progress d-none">
+                            <div class="progress mb-3">
+                                <div class="progress-bar progress-bar-animated" style="width: 0%"></div>
+                            </div>
+                            <small>Analyzing your resume...</small>
+                        </div>
+                    </div>
+                    <p class="support-note">
+                        Max 5MB. This creates the same structured profile as manual input.
+                    </p>
+                </div>
+
+                <div class="panel-card" id="manual-profile">
+                    <div class="panel-header">
+                        <div>
+                            <h3>Manual Profile Mode</h3>
+                            <p>Fill in essentials when a resume is not available.</p>
+                        </div>
+                        <span class="panel-tag">Mode B</span>
+                    </div>
+                    <form id="manualProfileForm" class="manual-form">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Education level</label>
+                                <select class="form-select" id="educationLevel">
+                                    <option value="">Select</option>
+                                    <option value="Diploma">Diploma</option>
+                                    <option value="Bachelors">Bachelors</option>
+                                    <option value="Masters">Masters</option>
+                                    <option value="Doctorate">Doctorate</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Years of experience</label>
+                                <input type="number" class="form-control" id="yearsExperience" min="0" step="0.5" placeholder="0">
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Skills (comma separated)</label>
+                                <input type="text" class="form-control" id="skillsInput" placeholder="Python, SQL, Data Analysis">
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Career interests</label>
+                                <input type="text" class="form-control" id="interestArea" placeholder="Data science, Backend development">
+                            </div>
+                        </div>
+                        <button class="btn btn-secondary mt-3" type="submit">
+                            <i class="fas fa-flask me-2"></i>Analyze Manual Profile
+                        </button>
+                    </form>
+                </div>
+            </section>
+
+            <section class="insight-grid" id="career-matches">
+                <div class="section-header">
+                    <div>
+                        <h2>Top Career Matches</h2>
+                        <p>Based on direct skill overlap with the career dataset.</p>
+                    </div>
+                    <button class="btn btn-outline-primary" id="exploreBtn">
+                        <i class="fas fa-compass me-2"></i>Generate Recommendations
+                    </button>
+                </div>
+                <div class="empty-state" id="recommendationsEmpty">
+                    <i class="fas fa-compass"></i>
+                    <h6>No recommendations yet</h6>
+                    <p>Upload a resume or complete the manual profile to start.</p>
+                </div>
+                <div id="recommendationsList" class="recommendations-grid d-none"></div>
+            </section>
+
+            <section class="insight-grid" id="skill-gap">
+                <div class="section-header">
+                    <div>
+                        <h2>Skill Gap Summary</h2>
+                        <p>Skills missing from the top matched roles.</p>
+                    </div>
+                </div>
+                <div class="panel-card">
+                    <div id="skillGapList" class="tag-list empty-list">No gaps calculated yet.</div>
+                </div>
+            </section>
+
+            <section class="insight-grid" id="roadmap">
+                <div class="section-header">
+                    <div>
+                        <h2>Learning Roadmap</h2>
+                        <p>Actionable steps generated from missing skills.</p>
+                    </div>
+                </div>
+                <div class="panel-card">
+                    <ol id="roadmapList" class="roadmap-list">
+                        <li>Complete a profile to generate a learning roadmap.</li>
+                    </ol>
+                </div>
+            </section>
+
+            <section class="insight-grid" id="feedback">
+                <div class="section-header">
+                    <div>
+                        <h2>Feedback History</h2>
+                        <p>Rate recommendations to support adaptive learning.</p>
+                    </div>
+                </div>
+                <div class="panel-card">
+                    <div id="feedbackList" class="empty-list">No feedback captured yet.</div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <div class="loading-overlay d-none" id="loadingOverlay">
+        <div class="loading-content">
+            <div class="spinner-border text-light" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-3">Processing your request...</p>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            if (window.DashboardModule) {
+                DashboardModule.init();
+            }
+        });
+    </script>
+</body>
+</html>

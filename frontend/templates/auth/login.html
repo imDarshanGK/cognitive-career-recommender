@@ -1,0 +1,91 @@
+{% extends "layout/auth_base.html" %}
+
+{% block title %}Login - CareerAI{% endblock %}
+
+{% block auth_title %}Account Login{% endblock %}
+{% block auth_subtitle %}Sign in to access your skill-based career insights{% endblock %}
+
+{% block auth_content %}
+<form method="POST" action="/login" id="loginForm" novalidate>
+    
+    <!-- Email Field -->
+    <div class="mb-3">
+        <label for="email" class="form-label">
+            <i class="fas fa-envelope me-1"></i>Email Address
+        </label>
+        <input type="email" 
+               class="form-control form-control-lg" 
+               id="email" 
+               name="email" 
+               placeholder="Enter your email"
+               value="{{ request.form.email }}"
+               required>
+        <div class="invalid-feedback" id="email-error"></div>
+    </div>
+    
+    <!-- Password Field -->
+    <div class="mb-3">
+        <label for="password" class="form-label">
+            <i class="fas fa-lock me-1"></i>Password
+        </label>
+        <div class="input-group">
+            <input type="password" 
+                   class="form-control form-control-lg" 
+                   id="password" 
+                   name="password" 
+                   placeholder="Enter your password"
+                   required>
+            <button type="button" class="btn btn-outline-secondary" id="togglePassword" data-target="password">
+                <i class="fas fa-eye"></i>
+            </button>
+        </div>
+        <div class="invalid-feedback" id="password-error"></div>
+    </div>
+    
+    <!-- Remember Me & Forgot Password -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="remember_me" name="remember_me">
+            <label class="form-check-label" for="remember_me">
+                Remember me
+            </label>
+        </div>
+        <a href="/forgot-password" class="text-decoration-none">
+            Forgot password?
+        </a>
+    </div>
+    
+    <!-- Login Button -->
+    <button type="submit" class="btn btn-primary btn-lg w-100 mb-3" id="loginBtn">
+        <span class="btn-text">
+            <i class="fas fa-sign-in-alt me-2"></i>Sign In
+        </span>
+        <span class="btn-loading d-none">
+            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+            Signing In...
+        </span>
+    </button>
+    
+</form>
+{% endblock %}
+
+{% block auth_footer %}
+<div class="text-center">
+    <p class="text-muted mb-0">
+        Don't have an account? 
+        <a href="/register" class="text-decoration-none fw-semibold">
+            Create one here
+        </a>
+    </p>
+</div>
+{% endblock %}
+
+{% block auth_links %}
+<div class="small text-muted">
+    <a href="/" class="text-decoration-none me-3">Home</a>
+    <a href="/register" class="text-decoration-none me-3">Get Started</a>
+    <a href="/forgot-password" class="text-decoration-none">Reset Password</a>
+</div>
+{% endblock %}
+
+{% block extra_js %}{% endblock %}

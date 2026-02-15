@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Page Not Found - {{ app_name }}</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Custom CSS -->
+    <link href="{{ url_for('static', filename='css/main.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/animations.css') }}" rel="stylesheet">
+</head>
+<body>
+    <div class="error-page d-flex align-items-center justify-content-center min-vh-100">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-md-8 col-lg-6">
+                    <div class="error-content text-center animate-fadeInUp">
+                        <!-- Error Illustration -->
+                        <div class="error-illustration mb-4">
+                            <div class="error-number animate-bounceIn">
+                                4<span class="animate-float">0</span>4
+                            </div>
+                            <div class="error-icon">
+                                <i class="fas fa-search animate-shake" style="animation-delay: 1s;"></i>
+                            </div>
+                        </div>
+                        
+                        <!-- Error Message -->
+                        <h1 class="error-title mb-3">Oops! Page Not Found</h1>
+                        <p class="error-description lead mb-4">
+                            The page you're looking for seems to have taken a different career path. 
+                            Don't worry, we'll help you find your way back!
+                        </p>
+                        
+                        <!-- Suggestions -->
+                        <div class="error-suggestions mb-5">
+                            <h5 class="mb-3">Here are some suggestions:</h5>
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <div class="suggestion-card hover-lift">
+                                        <i class="fas fa-home text-primary mb-2"></i>
+                                        <h6>Go Home</h6>
+                                        <p class="small text-muted">Return to the dashboard</p>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <div class="suggestion-card hover-lift">
+                                        <i class="fas fa-search text-info mb-2"></i>
+                                        <h6>Search</h6>
+                                        <p class="small text-muted">Use our search feature</p>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <div class="suggestion-card hover-lift">
+                                        <i class="fas fa-question-circle text-warning mb-2"></i>
+                                        <h6>Get Help</h6>
+                                        <p class="small text-muted">Contact our support team</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Actions -->
+                        <div class="error-actions">
+                            <a href="{{ url_for('index') }}" class="btn btn-primary btn-lg me-3 hover-scale">
+                                <i class="fas fa-home me-2"></i>Back to Home
+                            </a>
+                            <button class="btn btn-outline-secondary btn-lg" onclick="window.history.back()">
+                                <i class="fas fa-arrow-left me-2"></i>Go Back
+                            </button>
+                        </div>
+                        
+                        <!-- Fun Fact -->
+                        <div class="fun-fact mt-5 p-4 rounded">
+                            <h6 class="text-primary"><i class="fas fa-lightbulb me-2"></i>Did you know?</h6>
+                            <p class="mb-0 small">
+                                While you're here, our AI has analyzed over <strong>10,000</strong> career transitions 
+                                and can help you find your perfect career match!
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating particles for visual effect -->
+    <div class="particles-container">
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+    </div>
+
+    <style>
+        .error-page {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .error-content {
+            position: relative;
+            z-index: 2;
+        }
+        
+        .error-number {
+            font-size: 8rem;
+            font-weight: 900;
+            color: white;
+            text-shadow: 0 10px 20px rgba(0,0,0,0.3);
+            line-height: 1;
+            margin-bottom: 1rem;
+        }
+        
+        .error-icon {
+            font-size: 3rem;
+            color: rgba(255,255,255,0.8);
+            margin-top: -2rem;
+        }
+        
+        .error-title {
+            color: white;
+            font-weight: 600;
+        }
+        
+        .error-description {
+            color: rgba(255,255,255,0.9);
+        }
+        
+        .suggestion-card {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            padding: 1.5rem;
+            border-radius: 15px;
+            border: 1px solid rgba(255,255,255,0.2);
+            color: white;
+            text-decoration: none;
+            display: block;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .suggestion-card i {
+            font-size: 2rem;
+        }
+        
+        .suggestion-card:hover {
+            background: rgba(255,255,255,0.2);
+            transform: translateY(-5px);
+        }
+        
+        .fun-fact {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: white;
+        }
+        
+        .particles-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: 1;
+        }
+        
+        .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: rgba(255,255,255,0.5);
+            border-radius: 50%;
+            animation: float 8s ease-in-out infinite;
+        }
+        
+        .particle:nth-child(1) {
+            left: 20%;
+            top: 20%;
+            animation-delay: 0s;
+        }
+        
+        .particle:nth-child(2) {
+            left: 80%;
+            top: 80%;
+            animation-delay: 2s;
+        }
+        
+        .particle:nth-child(3) {
+            left: 40%;
+            top: 60%;
+            animation-delay: 4s;
+        }
+        
+        .particle:nth-child(4) {
+            left: 60%;
+            top: 40%;
+            animation-delay: 6s;
+        }
+        
+        @media (max-width: 768px) {
+            .error-number {
+                font-size: 6rem;
+            }
+            
+            .error-actions {
+                flex-direction: column;
+            }
+            
+            .error-actions .btn {
+                margin-bottom: 1rem;
+                width: 100%;
+            }
+        }
+    </style>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    
+    <!-- Initialize -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize theme
+            if (window.CareerAI) {
+                CareerAI.init();
+            }
+            
+            // Add click handlers to suggestion cards
+            document.querySelectorAll('.suggestion-card').forEach(card => {
+                card.addEventListener('click', function() {
+                    this.classList.add('animate-pulse');
+                    setTimeout(() => {
+                        this.classList.remove('animate-pulse');
+                    }, 600);
+                });
+            });
+        });
+    </script>
+</body>
+</html>

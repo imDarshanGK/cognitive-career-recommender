@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Server Error - {{ app_name }}</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Custom CSS -->
+    <link href="{{ url_for('static', filename='css/main.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/animations.css') }}" rel="stylesheet">
+</head>
+<body>
+    <div class="error-page d-flex align-items-center justify-content-center min-vh-100">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-md-8 col-lg-6">
+                    <div class="error-content text-center animate-fadeInUp">
+                        <!-- Error Illustration -->
+                        <div class="error-illustration mb-4">
+                            <div class="error-number animate-bounceIn">
+                                5<span class="animate-float">0</span>0
+                            </div>
+                            <div class="error-icon">
+                                <i class="fas fa-server animate-shake" style="animation-delay: 1s;"></i>
+                            </div>
+                        </div>
+                        
+                        <!-- Error Message -->
+                        <h1 class="error-title mb-3">Server Error</h1>
+                        <p class="error-description lead mb-4">
+                            It looks like our AI is having a coffee break! ☕<br>
+                            Don't worry, our engineers are on it. Please try again in a few moments.
+                        </p>
+                        
+                        <!-- Error Details (if available) -->
+                        <div class="error-details mb-4">
+                            <div class="alert alert-warning" role="alert">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                <strong>What happened?</strong> Our server encountered an unexpected issue while processing your request.
+                            </div>
+                        </div>
+                        
+                        <!-- Actions -->
+                        <div class="error-actions mb-5">
+                            <button class="btn btn-primary btn-lg me-3 hover-scale" onclick="location.reload()">
+                                <i class="fas fa-redo me-2"></i>Try Again
+                            </button>
+                            <a href="{{ url_for('index') }}" class="btn btn-outline-secondary btn-lg">
+                                <i class="fas fa-home me-2"></i>Go Home
+                            </a>
+                        </div>
+                        
+                        <!-- Status Information -->
+                        <div class="status-info mt-5 p-4 rounded">
+                            <h6 class="text-warning"><i class="fas fa-info-circle me-2"></i>System Status</h6>
+                            <div class="row text-start">
+                                <div class="col-md-6 mb-2">
+                                    <div class="status-item">
+                                        <span class="status-dot bg-success me-2"></span>
+                                        <small>Database: <strong>Online</strong></small>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mb-2">
+                                    <div class="status-item">
+                                        <span class="status-dot bg-warning me-2"></span>
+                                        <small>AI Engine: <strong>Restarting</strong></small>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mb-2">
+                                    <div class="status-item">
+                                        <span class="status-dot bg-success me-2"></span>
+                                        <small>Authentication: <strong>Online</strong></small>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mb-2">
+                                    <div class="status-item">
+                                        <span class="status-dot bg-success me-2"></span>
+                                        <small>File Upload: <strong>Online</strong></small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Contact Support -->
+                        <div class="contact-support mt-4">
+                            <p class="small text-white-50">
+                                Still having issues? 
+                                <a href="mailto:support@careerai.com" class="text-white text-decoration-underline">Contact Support</a>
+                                or <a href="#" class="text-white text-decoration-underline">Report a Bug</a>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Animated Background -->
+    <div class="error-bg">
+        <div class="circuit-line"></div>
+        <div class="circuit-line"></div>
+        <div class="circuit-line"></div>
+        <div class="circuit-node"></div>
+        <div class="circuit-node"></div>
+        <div class="circuit-node"></div>
+    </div>
+
+    <style>
+        .error-page {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .error-content {
+            position: relative;
+            z-index: 2;
+        }
+        
+        .error-number {
+            font-size: 8rem;
+            font-weight: 900;
+            color: white;
+            text-shadow: 0 10px 20px rgba(0,0,0,0.3);
+            line-height: 1;
+            margin-bottom: 1rem;
+        }
+        
+        .error-icon {
+            font-size: 3rem;
+            color: rgba(255,255,255,0.8);
+            margin-top: -2rem;
+        }
+        
+        .error-title {
+            color: white;
+            font-weight: 600;
+        }
+        
+        .error-description {
+            color: rgba(255,255,255,0.9);
+        }
+        
+        .error-details .alert {
+            background: rgba(255,255,255,0.15);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: white;
+        }
+        
+        .status-info {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: white;
+        }
+        
+        .status-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        
+        .status-item {
+            display: flex;
+            align-items: center;
+        }
+        
+        .error-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            opacity: 0.1;
+        }
+        
+        .circuit-line {
+            position: absolute;
+            background: white;
+            height: 2px;
+            animation: circuitFlow 4s ease-in-out infinite;
+        }
+        
+        .circuit-line:nth-child(1) {
+            top: 20%;
+            left: 0;
+            width: 30%;
+            animation-delay: 0s;
+        }
+        
+        .circuit-line:nth-child(2) {
+            top: 50%;
+            right: 0;
+            width: 40%;
+            animation-delay: 1s;
+        }
+        
+        .circuit-line:nth-child(3) {
+            bottom: 30%;
+            left: 20%;
+            width: 25%;
+            animation-delay: 2s;
+        }
+        
+        .circuit-node {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background: white;
+            border-radius: 50%;
+            animation: nodeGlow 3s ease-in-out infinite;
+        }
+        
+        .circuit-node:nth-child(4) {
+            top: 25%;
+            left: 15%;
+            animation-delay: 0.5s;
+        }
+        
+        .circuit-node:nth-child(5) {
+            top: 60%;
+            right: 20%;
+            animation-delay: 1.5s;
+        }
+        
+        .circuit-node:nth-child(6) {
+            bottom: 20%;
+            left: 70%;
+            animation-delay: 2.5s;
+        }
+        
+        @keyframes circuitFlow {
+            0%, 100% {
+                opacity: 0.3;
+                transform: scaleX(1);
+            }
+            50% {
+                opacity: 1;
+                transform: scaleX(1.2);
+            }
+        }
+        
+        @keyframes nodeGlow {
+            0%, 100% {
+                opacity: 0.5;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 1;
+                transform: scale(1.5);
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .error-number {
+                font-size: 6rem;
+            }
+            
+            .error-actions {
+                flex-direction: column;
+            }
+            
+            .error-actions .btn {
+                margin-bottom: 1rem;
+                width: 100%;
+            }
+        }
+    </style>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    
+    <!-- Auto-refresh attempt -->
+    <script>
+        let retryAttempts = 0;
+        const maxRetries = 3;
+        
+        function autoRetry() {
+            if (retryAttempts < maxRetries) {
+                retryAttempts++;
+                console.log(`Auto-retry attempt ${retryAttempts}/${maxRetries}`);
+                
+                setTimeout(() => {
+                    location.reload();
+                }, 5000 * retryAttempts); // Exponential backoff
+            }
+        }
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize theme
+            if (window.CareerAI) {
+                CareerAI.init();
+            }
+            
+            // Start auto-retry sequence
+            setTimeout(autoRetry, 10000); // First retry after 10 seconds
+            
+            // Animate status dots
+            setInterval(() => {
+                document.querySelectorAll('.status-dot').forEach(dot => {
+                    dot.style.animationDuration = (Math.random() * 2 + 1) + 's';
+                });
+            }, 3000);
+        });
+    </script>
+</body>
+</html>
