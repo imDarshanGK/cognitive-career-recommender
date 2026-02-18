@@ -26,6 +26,7 @@ python-dateutil==2.8.2
 # Optional ML/NLP libraries (for enhanced features)
 scikit-learn==1.5.0
 spacy==3.7.4
+blis==0.7.11
 nltk==3.8.1
 textblob==0.18.0
 joblib==1.4.2
