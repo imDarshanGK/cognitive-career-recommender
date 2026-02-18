@@ -550,7 +550,7 @@ DashboardModule.submitProfileForAnalysis = function(profilePayload, userSkills) 
     })
         .then(response => response.json())
         .then(data => {
-            console.log('Profile analysis response:', data);
+            // Profile analysis completed
             
             // Always render recommendations if available (even 0% matches are useful)
             if (data.recommendations && data.recommendations.length) {
@@ -562,9 +562,7 @@ DashboardModule.submitProfileForAnalysis = function(profilePayload, userSkills) 
             }
 
             // Always display real market skills from Adzuna API - highest priority
-            console.log('Market skills from API:', data.market_skills);
             if (data.market_skills && Object.keys(data.market_skills).length > 0) {
-                console.log('✓ Displaying real market skills from Adzuna');
                 this.updateSkillGapSummaryWithMarketData(data.market_skills);
                 this.updateRoadmapWithMarketData(data.market_skills, userSkills);
             } else {

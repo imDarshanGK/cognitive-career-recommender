@@ -531,25 +531,42 @@ def register():
         
         # Create new user (NOT verified yet)
         verification_token = secrets.token_urlsafe(32)
+        
+        # Check if email service is configured
+        mail_username = app.config.get('MAIL_USERNAME')
+        mail_configured = mail_username and mail_username != 'your-email@gmail.com'
+        
         users_db[email] = {
             'password_hash': hash_password(password),
             'first_name': first_name,
             'last_name': last_name,
             'email': email,
             'profession': profession,
-            'email_verified': False,
-            'verification_token': verification_token,
+            'email_verified': False if mail_configured else True,  # Auto-verify if no email service
+            'verification_token': verification_token if mail_configured else None,
             'created_at': datetime.now(timezone.utc).isoformat()
         }
         
-        # Send verification email
-        email_sent = send_verification_email(email, verification_token, first_name)
-        
-        return jsonify({
-            'success': True,
-            'redirect_url': '/verify-email-notice',
-            'message': 'Account created! Please check your email to verify your account.'
-        })
+        # Send verification email if configured
+        if mail_configured:
+            email_sent = send_verification_email(email, verification_token, first_name)
+            
+            return jsonify({
+                'success': True,
+                'redirect_url': '/verify-email-notice',
+                'message': 'Account created! Please check your email to verify your account.'
+            })
+        else:
+            # Development mode - no email service configured
+            verification_url = f"http://localhost:5000/verify-email/{verification_token}"
+            logger.warning(f"EMAIL NOT CONFIGURED - Auto-verified user: {email}")
+            logger.warning(f"Verification URL (if needed): {verification_url}")
+            
+            return jsonify({
+                'success': True,
+                'redirect_url': '/login',
+                'message': 'Account created successfully! You can now log in.'
+            })
     
     return render_template('auth/register.html')
 
@@ -856,5 +873,20 @@ def handle_csrf_error(error):
     return render_template('errors/500.html', error_message='Invalid or missing CSRF token.'), 400
 
 if __name__ == '__main__':
+    # Check email configuration on startup
+    mail_username = app.config.get('MAIL_USERNAME')
+    mail_configured = mail_username and mail_username != 'your-email@gmail.com'
+    
+    if not mail_configured:
+        logger.warning("=" * 80)
+        logger.warning("EMAIL SERVICE NOT CONFIGURED - Development Mode Active")
+        logger.warning("Users will be auto-verified on registration (no email sent)")
+        logger.warning("To enable emails, update .env with:")
+        logger.warning("  MAIL_USERNAME=your-actual-email@gmail.com")
+        logger.warning("  MAIL_PASSWORD=your-app-specific-password")
+        logger.warning("=" * 80)
+    else:
+        logger.info("Email service configured and ready")
+    
     debug_mode = os.environ.get('DEBUG', 'False').lower() in ('true', '1', 't')
     app.run(debug=debug_mode, host='0.0.0.0', port=5000)

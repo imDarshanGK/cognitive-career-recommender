@@ -87,9 +87,21 @@ CognitiveCareerAI.updateThemeIcon = function() {
     if (!themeToggle) return;
     
     const icon = themeToggle.querySelector('i');
+    const isDark = this.state.theme === 'dark';
+    
     if (icon) {
-        icon.className = this.state.theme === 'light' ? 'fas fa-moon' : 'fas fa-sun';
+        // Update icon class
+        icon.className = isDark ? 'fas fa-sun' : 'fas fa-moon';
+        // Inline styles to ensure visibility
+        icon.style.color = isDark ? '#ffa500' : '#333';
+        icon.style.fontSize = '18px';
+        icon.style.lineHeight = '1';
+        icon.style.display = 'inline-block';
     }
+    
+    // Update button styling
+    themeToggle.style.backgroundColor = isDark ? '#454d55' : '#f8f9fa';
+    themeToggle.style.borderColor = isDark ? '#6c757d' : '#dee2e6';
 };
 
 /**
@@ -335,6 +347,19 @@ CognitiveCareerAI.showAlert = function(type, message, options = {}) {
     const alertContainer = this.getAlertContainer();
     const alertId = 'alert-' + Date.now();
     
+    // Remove previous error alerts to prevent duplicates
+    const existingAlerts = alertContainer.querySelectorAll('.alert');
+    existingAlerts.forEach(alert => {
+        const alertType = alert.classList.contains('alert-danger') ? 'error' : 
+                         alert.classList.contains('alert-success') ? 'success' :
+                         alert.classList.contains('alert-warning') ? 'warning' : 'info';
+        
+        // Remove if same type or if too many alerts (max 3)
+        if (alertType === type || existingAlerts.length >= 3) {
+            alert.remove();
+        }
+    });
+    
     const alertHTML = `
         <div class="alert alert-${type === 'error' ? 'danger' : type} alert-dismissible fade show" role="alert" id="${alertId}">
             <i class="fas fa-${this.getAlertIcon(type)} me-2"></i>
@@ -458,7 +483,7 @@ CognitiveCareerAI.trackPageLoad = function() {
     if ('performance' in window) {
         window.addEventListener('load', () => {
             const loadTime = performance.now();
-            console.log(`Page loaded in ${Math.round(loadTime)}ms`);
+            // Performance tracking (silent in production)
         });
     }
 };

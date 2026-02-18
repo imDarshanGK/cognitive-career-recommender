@@ -623,6 +623,14 @@ AuthModule.showAlert = function(type, message) {
         return;
     }
     
+    const alertContainer = document.querySelector('.alert-container') || 
+                          document.querySelector('.auth-card-body') ||
+                          document.body;
+    
+    // Remove existing alerts to prevent duplicates
+    const existingAlerts = alertContainer.querySelectorAll('.alert');
+    existingAlerts.forEach(alert => alert.remove());
+    
     const alertHTML = `
         <div class="alert alert-${type === 'error' ? 'danger' : type} alert-dismissible fade show" role="alert">
             <i class="fas fa-${type === 'error' ? 'exclamation-circle' : 'check-circle'} me-2"></i>
@@ -630,10 +638,6 @@ AuthModule.showAlert = function(type, message) {
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
     `;
-    
-    const alertContainer = document.querySelector('.alert-container') || 
-                          document.querySelector('.auth-card-body') ||
-                          document.body;
     
     alertContainer.insertAdjacentHTML('afterbegin', alertHTML);
 };
