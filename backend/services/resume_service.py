@@ -27,7 +27,7 @@ try:
     except LookupError:
         try:
             nltk.download('punkt')
-        except:
+        except Exception as e:
             NLTK_AVAILABLE = False
 except ImportError:
     NLTK_AVAILABLE = False
@@ -40,7 +40,7 @@ class ResumeService:
         if SPACY_AVAILABLE:
             try:
                 self.nlp = spacy.load('en_core_web_sm')
-            except:
+            except Exception as e:
                 self.nlp = None
         else:
             self.nlp = None
@@ -181,7 +181,7 @@ class ResumeService:
             if match:
                 try:
                     return float(match.group(1))
-                except:
+                except ValueError:
                     pass
         
         return 0
@@ -203,5 +203,5 @@ class ResumeService:
         
         try:
             db.session.commit()
-        except:
+        except Exception as e:
             db.session.rollback()

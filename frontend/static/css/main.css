@@ -5,6 +5,17 @@ COGNITIVE CAREER AI - MAIN STYLESHEET
 Modern, responsive design with dark theme support
 */
 
+/* ========== FONT AWESOME FIX ========== */
+.fas, .far, .fab, .fa {
+  font-family: "Font Awesome 6 Free", "FontAwesome" !important;
+  font-weight: 900;
+  font-style: normal;
+  font-variant: normal;
+  text-rendering: auto;
+  -webkit-font-smoothing: antialiased;
+  display: inline-block;
+}
+
 /* ========== ROOT VARIABLES ========== */
 :root {
   /* Brand Colors */

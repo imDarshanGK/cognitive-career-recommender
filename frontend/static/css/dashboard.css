@@ -5,6 +5,17 @@ DASHBOARD STYLES
 Styles for user dashboard, profile, and admin interfaces
 */
 
+/* ========== FONT AWESOME FIX ========== */
+.fas, .far, .fab, .fa {
+  font-family: "Font Awesome 6 Free", "FontAwesome" !important;
+  font-weight: 900;
+  font-style: normal;
+  font-variant: normal;
+  text-rendering: auto;
+  -webkit-font-smoothing: antialiased;
+  display: inline-block;
+}
+
 /* ========== PROFILE SIDEBAR ========== */
 .profile-sidebar .card {
   border: none;
@@ -516,6 +527,10 @@ Styles for user dashboard, profile, and admin interfaces
 .sidebar-nav .nav-item i {
   width: 18px;
   text-align: center;
+  font-family: "Font Awesome 6 Free", "FontAwesome";
+  font-weight: 900;
+  font-style: normal;
+  display: inline-block;
 }
 
 .sidebar-nav .nav-item:hover,
@@ -827,6 +842,54 @@ Styles for user dashboard, profile, and admin interfaces
   color: var(--secondary-500);
 }
 
+/* Real market skills from Adzuna API */
+.tag-item.market-skill {
+  background: rgba(52, 211, 153, 0.15);
+  color: #059669;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  font-weight: 500;
+  padding: 0.35rem 0.75rem;
+  transition: all 0.2s ease;
+}
+
+.tag-item.market-skill:hover {
+  background: rgba(52, 211, 153, 0.25);
+  border-color: rgba(16, 185, 129, 0.6);
+  transform: translateY(-1px);
+}
+
+.tag-item.market-skill[data-demand="high"] {
+  background: rgba(220, 38, 38, 0.1);
+  color: #991b1b;
+  border-color: rgba(248, 113, 113, 0.3);
+}
+
+.tag-item.market-skill[data-demand="high"]:hover {
+  background: rgba(220, 38, 38, 0.2);
+  border-color: rgba(248, 113, 113, 0.5);
+}
+
+.tag-item.market-skill[data-demand="medium"] {
+  background: rgba(245, 158, 11, 0.1);
+  color: #92400e;
+  border-color: rgba(251, 191, 36, 0.3);
+}
+
+.tag-item.market-skill[data-demand="medium"]:hover {
+  background: rgba(245, 158, 11, 0.2);
+  border-color: rgba(251, 191, 36, 0.5);
+}
+
+.market-skills-container {
+  padding: 0.5rem 0;
+}
+
+.market-skills-container .tag-item {
+  display: inline-block;
+  margin-right: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
 .explanation-text {
   font-size: 0.9rem;
   color: var(--ink-500);
@@ -839,8 +902,26 @@ Styles for user dashboard, profile, and admin interfaces
 }
 
 .roadmap-list {
-  padding-left: 1.2rem;
+  padding-left: 0;
   color: var(--ink-700);
+  list-style: none;
+}
+
+.roadmap-list li {
+  margin-bottom: 0.5rem;
+  padding: 0;
+  line-height: 1.5;
+}
+
+.roadmap-list li[style*="list-style: none"] {
+  padding: 0.5rem 0;
+  border-top: 2px solid #e5e7eb;
+  margin-top: 0.5rem;
+}
+
+.roadmap-list small {
+  display: block;
+  margin-top: 0.25rem;
 }
 
 .empty-list {

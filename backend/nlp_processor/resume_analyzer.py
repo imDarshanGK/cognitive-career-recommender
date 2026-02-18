@@ -6,6 +6,7 @@ Handles resume parsing, skill extraction, and interest analysis using NLP techni
 import pandas as pd
 import numpy as np
 import re
+from datetime import datetime
 from collections import Counter
 import PyPDF2
 from docx import Document
@@ -67,14 +68,21 @@ class ResumeAnalyzer:
                 nltk.data.find('corpora/stopwords')
             except LookupError:
                 try:
-                    nltk.download('punkt')
-                    nltk.download('stopwords')
-                except:
-                    pass
+                    import sys
+                    print("Downloading required NLTK data...")
+                    nltk.download('punkt', quiet=True)
+                    nltk.download('stopwords', quiet=True)
+                except Exception as e:
+                    import logging
+                    logger = logging.getLogger(__name__)
+                    logger.error(f"Failed to download NLTK data: {e}. Some NLP features may be limited.")
             
             try:
                 self.stop_words = set(stopwords.words('english'))
-            except:
+            except Exception as e:
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.warning(f"Could not load stopwords: {e}")
                 self.stop_words = set()
         else:
             self.stop_words = set()
@@ -118,6 +126,14 @@ class ResumeAnalyzer:
             'critical thinking', 'project management', 'time management',
             'adaptability', 'creativity', 'analytical thinking'
         ]
+
+        # Build lookup for normalization
+        self.skill_lookup = {}
+        for skills in self.technical_skills.values():
+            for skill in skills:
+                self.skill_lookup[skill.lower()] = skill
+        for skill in self.soft_skills:
+            self.skill_lookup[skill.lower()] = skill
     
     def _load_education_patterns(self):
         """Load education-related patterns"""
@@ -181,7 +197,7 @@ class ResumeAnalyzer:
     
     def _extract_text_from_file(self, file) -> str:
         """Extract text content from different file formats"""
-        filename = file.filename.lower()
+        filename = (file.filename or '').lower()
         
         try:
             if filename.endswith('.pdf'):
@@ -189,10 +205,12 @@ class ResumeAnalyzer:
             elif filename.endswith('.docx'):
                 return self._extract_from_docx(file)
             elif filename.endswith('.doc'):
-                # For .doc files, you might need additional libraries like python-docx2txt
                 return self._extract_from_doc(file)
             elif filename.endswith('.txt'):
-                return file.read().decode('utf-8')
+                content = file.read()
+                if isinstance(content, bytes):
+                    return content.decode('utf-8', errors='ignore')
+                return str(content)
             else:
                 return ''
         except Exception as e:
@@ -224,8 +242,16 @@ class ResumeAnalyzer:
     
     def _extract_from_doc(self, file) -> str:
         """Extract text from DOC file (simplified)"""
-        # This would require additional libraries for proper .doc support
-        return "DOC format processing requires additional setup"
+        try:
+            content = file.read()
+            if isinstance(content, bytes):
+                text = content.decode('utf-8', errors='ignore')
+                if not text.strip():
+                    text = content.decode('latin-1', errors='ignore')
+                return text
+            return str(content)
+        except Exception:
+            return ''
     
     def _extract_personal_info(self, text: str) -> Dict[str, str]:
         """Extract personal information like name, email, phone"""
@@ -264,6 +290,8 @@ class ResumeAnalyzer:
             'soft_skills': [],
             'skill_confidence': {}
         }
+
+        section_skills = self._extract_skills_from_sections(text)
         
         # Extract technical skills
         for category, skills_list in self.technical_skills.items():
@@ -284,12 +312,50 @@ class ResumeAnalyzer:
             pattern = r'\b' + re.escape(skill.lower()) + r'\b'
             if re.search(pattern, text_lower):
                 extracted_skills['soft_skills'].append(skill)
+
+        # Merge section skills into technical list when possible
+        for skill in section_skills:
+            normalized = skill.lower()
+            canonical = self.skill_lookup.get(normalized, skill)
+            if canonical.lower() in [s.lower() for s in self.soft_skills]:
+                extracted_skills['soft_skills'].append(canonical)
+            else:
+                extracted_skills['technical_skills'].append(canonical)
         
         # Remove duplicates
         extracted_skills['technical_skills'] = list(set(extracted_skills['technical_skills']))
         extracted_skills['soft_skills'] = list(set(extracted_skills['soft_skills']))
         
         return extracted_skills
+
+    def _extract_skills_from_sections(self, text: str) -> List[str]:
+        headings = {'skills', 'technical skills', 'technologies', 'tools', 'expertise', 'competencies'}
+        lines = [line.strip() for line in text.split('\n') if line.strip()]
+        collected = []
+
+        i = 0
+        while i < len(lines):
+            line = lines[i].lower().strip(':')
+            if line in headings:
+                i += 1
+                while i < len(lines):
+                    next_line = lines[i].strip()
+                    lower_next = next_line.lower().strip(':')
+                    if lower_next in headings:
+                        break
+                    if len(next_line) < 3:
+                        i += 1
+                        continue
+                    parts = re.split(r'[•|,;/]+', next_line)
+                    for part in parts:
+                        cleaned = part.strip()
+                        if cleaned:
+                            collected.append(cleaned)
+                    i += 1
+                continue
+            i += 1
+
+        return collected
     
     def _extract_experience(self, text: str) -> List[Dict[str, Any]]:
         """Extract work experience information"""
@@ -303,6 +369,9 @@ class ResumeAnalyzer:
                 years = [int(match) for match in matches if match.isdigit()]
                 if years:
                     total_years = max(years)
+
+        # Estimate experience from date ranges
+        total_years = max(total_years, self._estimate_years_from_dates(text))
         
         # Extract job titles
         job_titles = []
@@ -321,6 +390,17 @@ class ResumeAnalyzer:
             })
         
         return experience_list
+
+    def _estimate_years_from_dates(self, text: str) -> int:
+        current_year = datetime.utcnow().year
+        year_ranges = re.findall(r'((?:19|20)\d{2})\s*[-–]\s*((?:19|20)\d{2}|present|current)', text.lower())
+        total = 0
+        for start_str, end_str in year_ranges:
+            start = int(start_str)
+            end = current_year if end_str in ('present', 'current') else int(end_str)
+            if end >= start:
+                total += max(1, end - start)
+        return total
     
     def _extract_companies(self, text: str) -> List[str]:
         """Extract company names (basic implementation)"""
@@ -357,7 +437,7 @@ class ResumeAnalyzer:
                 education_info['fields_of_study'].append(field)
         
         # Extract graduation years
-        year_pattern = r'(19|20)\d{2}'
+        year_pattern = r'(?:19|20)\d{2}'
         years = re.findall(year_pattern, text)
         education_info['graduation_years'] = [year for year in years if int(year) > 1990]
         

@@ -185,9 +185,11 @@ class JobDatasetLoader:
         Call this once during initialization
         """
         # Check if jobs already exist
+        import logging
+        logger = logging.getLogger(__name__)
         existing_count = Job.query.count()
         if existing_count > 0:
-            print(f"Jobs already loaded: {existing_count} jobs found")
+            logger.info(f"Jobs already loaded: {existing_count} jobs found")
             return
         
         try:
@@ -214,9 +216,13 @@ class JobDatasetLoader:
                     db.session.add(skill)
             
             db.session.commit()
-            print(f"Loaded {len(JobDatasetLoader.JOB_DATA)} jobs successfully")
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.info(f"Loaded {len(JobDatasetLoader.JOB_DATA)} jobs successfully")
             return True
         except Exception as e:
             db.session.rollback()
-            print(f"Error loading jobs: {str(e)}")
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error loading jobs: {str(e)}")
             return False

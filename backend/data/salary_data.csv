@@ -1,0 +1,22 @@
+job_title,experience_level,location,average_salary,salary_range_min,salary_range_max
+Data Scientist,Entry Level,"San Francisco, CA",95000,70000,120000
+Software Engineer,Entry Level,"San Francisco, CA",85000,65000,105000
+Product Manager,Entry Level,"San Francisco, CA",105000,80000,130000
+UX Designer,Entry Level,"San Francisco, CA",75000,55000,95000
+DevOps Engineer,Entry Level,"San Francisco, CA",90000,70000,110000
+Business Analyst,Entry Level,"San Francisco, CA",70000,55000,85000
+Marketing Manager,Entry Level,"San Francisco, CA",80000,60000,100000
+Data Scientist,Mid Level,"San Francisco, CA",123500,91000,156000
+Software Engineer,Mid Level,"San Francisco, CA",110500,84500,136500
+Product Manager,Mid Level,"San Francisco, CA",136500,104000,169000
+UX Designer,Mid Level,"San Francisco, CA",97500,71500,123500
+DevOps Engineer,Mid Level,"San Francisco, CA",117000,91000,143000
+Business Analyst,Mid Level,"San Francisco, CA",91000,71500,110500
+Marketing Manager,Mid Level,"San Francisco, CA",104000,78000,130000
+Data Scientist,Senior Level,"San Francisco, CA",152000,112000,192000
+Software Engineer,Senior Level,"San Francisco, CA",136000,104000,168000
+Product Manager,Senior Level,"San Francisco, CA",168000,128000,208000
+UX Designer,Senior Level,"San Francisco, CA",120000,88000,152000
+DevOps Engineer,Senior Level,"San Francisco, CA",144000,112000,176000
+Business Analyst,Senior Level,"San Francisco, CA",112000,88000,136000
+Marketing Manager,Senior Level,"San Francisco, CA",128000,96000,160000

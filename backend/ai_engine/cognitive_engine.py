@@ -6,6 +6,7 @@ Implements the cognitive loop: Observe → Understand → Analyze → Reason →
 import numpy as np
 import pandas as pd
 import json
+import os
 from typing import Dict, List, Any, Tuple
 from datetime import datetime
 
@@ -51,11 +52,15 @@ class CognitiveRecommendationEngine:
     
     def _initialize_models(self):
         """Initialize machine learning models and explainable AI components"""
+        # Define base paths relative to this file
+        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        models_dir = os.path.join(base_dir, 'models')
+        
         if JOBLIB_AVAILABLE:
             try:
                 # Load pre-trained models if available
-                self.job_model = joblib.load('models/job_recommendation_model.pkl')
-                self.skill_vectorizer = joblib.load('models/skill_vectorizer.pkl')
+                self.job_model = joblib.load(os.path.join(models_dir, 'job_recommendation_model.pkl'))
+                self.skill_vectorizer = joblib.load(os.path.join(models_dir, 'skill_vectorizer.pkl'))
             except (FileNotFoundError, EOFError, Exception):
                 self.job_model = None
                 self.skill_vectorizer = None
@@ -77,8 +82,12 @@ class CognitiveRecommendationEngine:
     
     def _load_job_data(self):
         """Load job market data for recommendations"""
+        # Define data path relative to this file
+        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        data_path = os.path.join(base_dir, 'data', 'job_dataset.csv')
+        
         try:
-            self.job_data = pd.read_csv('data/job_dataset.csv')
+            self.job_data = pd.read_csv(data_path)
         except (FileNotFoundError, Exception):
             # Create sample job data if dataset not available or corrupted
             self.job_data = self._create_sample_job_data()

@@ -3,9 +3,10 @@ Simplified NLP-based Resume Analyzer for Cognitive Career Recommendation System
 """
 
 import re
+from datetime import datetime
 from typing import Dict, List, Any, Optional
 
-class ResumeAnalyzer:
+class SimpleResumeAnalyzer:
     """
     Simplified Resume Analyzer that extracts basic information from resume text
     """
@@ -98,6 +99,8 @@ class ResumeAnalyzer:
         """Extract skills from resume text using word boundary matching"""
         text_lower = text.lower()
         found_skills = []
+
+        found_skills.extend(self._extract_skills_from_sections(text))
         
         for category, skills in self.skill_patterns.items():
             for skill in skills:
@@ -109,6 +112,32 @@ class ResumeAnalyzer:
                     found_skills.append(skill.title())
         
         return list(set(found_skills))  # Remove duplicates
+
+    def _extract_skills_from_sections(self, text: str) -> List[str]:
+        headings = {'skills', 'technical skills', 'technologies', 'tools', 'expertise', 'competencies'}
+        lines = [line.strip() for line in text.split('\n') if line.strip()]
+        collected = []
+
+        i = 0
+        while i < len(lines):
+            line = lines[i].lower().strip(':')
+            if line in headings:
+                i += 1
+                while i < len(lines):
+                    next_line = lines[i].strip()
+                    lower_next = next_line.lower().strip(':')
+                    if lower_next in headings:
+                        break
+                    parts = re.split(r'[•|,;/]+', next_line)
+                    for part in parts:
+                        cleaned = part.strip()
+                        if cleaned:
+                            collected.append(cleaned)
+                    i += 1
+                continue
+            i += 1
+
+        return collected
     
     def _extract_education(self, text: str) -> Dict[str, Any]:
         """Extract education information from resume text"""
@@ -149,15 +178,29 @@ class ResumeAnalyzer:
         experiences = []
         
         # Look for experience sections
+        total_years = self._estimate_years_from_dates(text)
+
         if any(keyword in text.lower() for keyword in experience_keywords):
             experiences.append({
                 'position': 'Professional Experience Found',
                 'company': 'Various Companies',
-                'duration': 'Multiple Years',
-                'description': 'Professional experience detected in resume'
+                'duration': f'{total_years} years' if total_years else 'Multiple Years',
+                'description': 'Professional experience detected in resume',
+                'years': total_years
             })
         
         return experiences
+
+    def _estimate_years_from_dates(self, text: str) -> int:
+        current_year = datetime.utcnow().year
+        year_ranges = re.findall(r'((?:19|20)\d{2})\s*[-–]\s*((?:19|20)\d{2}|present|current)', text.lower())
+        total = 0
+        for start_str, end_str in year_ranges:
+            start = int(start_str)
+            end = current_year if end_str in ('present', 'current') else int(end_str)
+            if end >= start:
+                total += max(1, end - start)
+        return total
     
     def _extract_contact_info(self, text: str) -> Dict[str, Any]:
         """Extract contact information from resume text"""

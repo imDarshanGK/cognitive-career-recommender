@@ -5,6 +5,17 @@ AUTHENTICATION STYLES
 Specialized styles for login, register, and auth pages
 */
 
+/* ========== FONT AWESOME FIX ========== */
+.fas, .far, .fab, .fa {
+  font-family: "Font Awesome 6 Free", "FontAwesome" !important;
+  font-weight: 900;
+  font-style: normal;
+  font-variant: normal;
+  text-rendering: auto;
+  -webkit-font-smoothing: antialiased;
+  display: inline-block;
+}
+
 /* ========== AUTH PAGE LAYOUT ========== */
 .auth-page {
   min-height: 100vh;
@@ -37,6 +48,42 @@ Specialized styles for login, register, and auth pages
 
 .auth-brand:hover {
   color: #1b3a6b;
+}
+
+/* Theme Toggle Button */
+#theme-toggle {
+  background: #f3f4f6;
+  border: 1px solid #d1d5db !important;
+  color: #374151 !important;
+  padding: 0.4rem 0.6rem !important;
+  min-width: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+#theme-toggle:hover {
+  background: #e5e7eb;
+  border-color: #9ca3af !important;
+  color: #111827 !important;
+}
+
+#theme-toggle i {
+  font-size: 1rem;
+  display: inline-block;
+}
+
+[data-bs-theme="dark"] #theme-toggle {
+  background: #1f2937;
+  border-color: #374151 !important;
+  color: #d1d5db !important;
+}
+
+[data-bs-theme="dark"] #theme-toggle:hover {
+  background: #374151;
+  border-color: #4b5563 !important;
+  color: #f3f4f6 !important;
 }
 
 /* ========== AUTH BACKGROUND ========== */
@@ -186,18 +233,66 @@ Specialized styles for login, register, and auth pages
   background: #ffffff;
   border: 1px solid #d1d5db;
   border-left: none;
+  color: #374151;
+  font-weight: 500;
+  padding: 0.5rem 0.75rem;
+  min-width: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 [data-bs-theme="dark"] .auth-card .input-group .btn {
-  background: #0f172a;
-  border-color: #334155;
-  color: #e2e8f0;
+  background: #1f2937;
+  border-color: #374151;
+  color: #d1d5db;
 }
 
 .auth-card .input-group .btn:hover {
   background: #f3f4f6;
   border-color: #9ca3af;
   color: #111827;
+}
+
+[data-bs-theme="dark"] .auth-card .input-group .btn:hover {
+  background: #374151;
+  border-color: #4b5563;
+  color: #f3f4f6;
+}
+
+/* Password Toggle Button */
+#togglePassword {
+  background: #ffffff !important;
+  border: 1px solid #d1d5db !important;
+  color: #374151 !important;
+  padding: 0.5rem 0.75rem !important;
+  min-width: 42px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+#togglePassword:hover {
+  background: #f3f4f6 !important;
+  border-color: #9ca3af !important;
+  color: #111827 !important;
+}
+
+#togglePassword i {
+  font-size: 1rem;
+  display: inline-block;
+}
+
+[data-bs-theme="dark"] #togglePassword {
+  background: #1f2937 !important;
+  border-color: #374151 !important;
+  color: #d1d5db !important;
+}
+
+[data-bs-theme="dark"] #togglePassword:hover {
+  background: #374151 !important;
+  border-color: #4b5563 !important;
+  color: #f3f4f6 !important;
 }
 
 /* ========== AUTH BUTTONS ========== */

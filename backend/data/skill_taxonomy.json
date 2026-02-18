@@ -1,0 +1,135 @@
+{
+  "technical_skills": {
+    "programming_languages": {
+      "python": {
+        "category": "Programming",
+        "difficulty": "Intermediate",
+        "market_demand": 0.95,
+        "related_skills": [
+          "pandas",
+          "numpy",
+          "machine learning"
+        ],
+        "learning_resources": [
+          "Python.org Tutorial",
+          "Codecademy Python Course",
+          "Python Crash Course Book"
+        ]
+      },
+      "javascript": {
+        "category": "Programming",
+        "difficulty": "Intermediate",
+        "market_demand": 0.92,
+        "related_skills": [
+          "react",
+          "node.js",
+          "html",
+          "css"
+        ],
+        "learning_resources": [
+          "MDN Web Docs",
+          "JavaScript30 Course",
+          "You Don't Know JS Book Series"
+        ]
+      },
+      "java": {
+        "category": "Programming",
+        "difficulty": "Intermediate",
+        "market_demand": 0.88,
+        "related_skills": [
+          "spring",
+          "hibernate",
+          "maven"
+        ],
+        "learning_resources": [
+          "Oracle Java Tutorials",
+          "Java: The Complete Reference",
+          "Spring Framework Documentation"
+        ]
+      }
+    },
+    "data_science": {
+      "machine_learning": {
+        "category": "AI/ML",
+        "difficulty": "Advanced",
+        "market_demand": 0.97,
+        "related_skills": [
+          "python",
+          "statistics",
+          "pandas",
+          "scikit-learn"
+        ],
+        "learning_resources": [
+          "Coursera Machine Learning Course",
+          "Hands-On Machine Learning Book",
+          "Kaggle Learn ML Course"
+        ]
+      },
+      "statistics": {
+        "category": "Mathematics",
+        "difficulty": "Advanced",
+        "market_demand": 0.85,
+        "related_skills": [
+          "r",
+          "python",
+          "data analysis"
+        ],
+        "learning_resources": [
+          "Khan Academy Statistics",
+          "Think Stats Book",
+          "Statistical Learning Course"
+        ]
+      }
+    },
+    "web_development": {
+      "react": {
+        "category": "Frontend",
+        "difficulty": "Intermediate",
+        "market_demand": 0.9,
+        "related_skills": [
+          "javascript",
+          "html",
+          "css",
+          "node.js"
+        ],
+        "learning_resources": [
+          "React Official Documentation",
+          "React Complete Guide Course",
+          "Create React App Tutorial"
+        ]
+      }
+    }
+  },
+  "soft_skills": {
+    "communication": {
+      "category": "Interpersonal",
+      "difficulty": "Intermediate",
+      "market_demand": 0.99,
+      "related_skills": [
+        "leadership",
+        "teamwork",
+        "presentation"
+      ],
+      "learning_resources": [
+        "Toastmasters International",
+        "Crucial Conversations Book",
+        "TED Talks on Communication"
+      ]
+    },
+    "leadership": {
+      "category": "Management",
+      "difficulty": "Advanced",
+      "market_demand": 0.93,
+      "related_skills": [
+        "communication",
+        "project management",
+        "strategy"
+      ],
+      "learning_resources": [
+        "Harvard Leadership Courses",
+        "The Leader in Me Book",
+        "Leadership Challenge Workshop"
+      ]
+    }
+  }
+}

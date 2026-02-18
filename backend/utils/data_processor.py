@@ -7,7 +7,7 @@ import pandas as pd
 import numpy as np
 import json
 import requests
-from typing import Dict, List, Any, Tuple
+from typing import Dict, List, Any, Tuple, Optional
 import sqlite3
 from datetime import datetime, timedelta
 import os
@@ -260,24 +260,52 @@ class DataProcessor:
         Returns:
             Processed job market data
         """
+        filters = filters or {}
+
+        # Try live data first if API credentials are available
+        live_jobs = self._fetch_adzuna_jobs(filters)
+        if live_jobs is not None:
+            return {
+                'source': 'adzuna',
+                'total_jobs': len(live_jobs),
+                'live_jobs': live_jobs
+            }
+
         filtered_data = self.job_data.copy()
         
         # Apply filters if provided
         if filters:
-            if 'location' in filters:
+            if 'location' in filters and filters.get('location'):
                 filtered_data = filtered_data[filtered_data['location'].str.contains(filters['location'], case=False, na=False)]
             
-            if 'experience_level' in filters:
+            if 'experience_level' in filters and filters.get('experience_level'):
                 filtered_data = filtered_data[filtered_data['experience_level'] == filters['experience_level']]
             
-            if 'industry' in filters:
+            if 'industry' in filters and filters.get('industry'):
                 filtered_data = filtered_data[filtered_data['industry'] == filters['industry']]
             
-            if 'employment_type' in filters:
+            if 'employment_type' in filters and filters.get('employment_type'):
                 filtered_data = filtered_data[filtered_data['employment_type'] == filters['employment_type']]
         
         # Generate market insights
+        jobs_preview = []
+        if not filtered_data.empty:
+            preview_rows = filtered_data.head(6)
+            for _, row in preview_rows.iterrows():
+                jobs_preview.append({
+                    'job_title': row.get('job_title', ''),
+                    'company': row.get('company', ''),
+                    'location': row.get('location', ''),
+                    'salary_min': int(row.get('salary_min')) if pd.notna(row.get('salary_min')) else None,
+                    'salary_max': int(row.get('salary_max')) if pd.notna(row.get('salary_max')) else None,
+                    'employment_type': row.get('employment_type', ''),
+                    'description': row.get('description', ''),
+                    'created': row.get('posted_date', ''),
+                    'redirect_url': ''
+                })
+
         market_data = {
+            'source': 'local',
             'total_jobs': len(filtered_data),
             'top_companies': filtered_data['company'].value_counts().head(10).to_dict(),
             'top_locations': filtered_data['location'].value_counts().head(10).to_dict(),
@@ -286,10 +314,73 @@ class DataProcessor:
             'average_salary_by_title': self._calculate_average_salaries(filtered_data),
             'top_skills': self._extract_top_skills(filtered_data),
             'jobs_by_date': self._get_job_trends(filtered_data),
-            'employment_types': filtered_data['employment_type'].value_counts().to_dict()
+            'employment_types': filtered_data['employment_type'].value_counts().to_dict(),
+            'jobs': jobs_preview
         }
         
         return market_data
+
+    def _fetch_adzuna_jobs(self, filters: Dict[str, Any]) -> Optional[List[Dict[str, Any]]]:
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        app_id = os.environ.get('ADZUNA_APP_ID')
+        app_key = os.environ.get('ADZUNA_APP_KEY')
+        if not app_id or not app_key:
+            logger.debug("Adzuna credentials not configured, using local job data")
+            return None
+
+        country = os.environ.get('ADZUNA_COUNTRY', 'in')
+        results_per_page = int(os.environ.get('ADZUNA_RESULTS_PER_PAGE', '10'))
+
+        query = filters.get('query') or filters.get('what') or ''
+        location = filters.get('location') or filters.get('where') or ''
+
+        params = {
+            'app_id': app_id,
+            'app_key': app_key,
+            'results_per_page': filters.get('results', results_per_page),
+        }
+        if query:
+            params['what'] = query
+        if location:
+            params['where'] = location
+
+        url = f"https://api.adzuna.com/v1/api/jobs/{country}/search/1"
+        
+        logger.info(f"Fetching live jobs from Adzuna: query='{query}', location='{location}'")
+
+        try:
+            response = requests.get(url, params=params, timeout=10)
+            response.raise_for_status()
+            payload = response.json()
+            logger.info(f"Adzuna API returned {len(payload.get('results', []))} jobs")
+        except requests.exceptions.Timeout:
+            logger.warning("Adzuna API request timeout - using local job data")
+            return None
+        except requests.exceptions.HTTPError as e:
+            logger.warning(f"Adzuna API error ({response.status_code}): {e} - using local job data")
+            return None
+        except Exception as e:
+            logger.error(f"Adzuna API failed: {e} - using local job data")
+            return None
+
+        results = payload.get('results', [])
+        live_jobs = []
+        for item in results:
+            live_jobs.append({
+                'job_title': item.get('title', ''),
+                'company': (item.get('company') or {}).get('display_name', ''),
+                'location': (item.get('location') or {}).get('display_name', ''),
+                'salary_min': item.get('salary_min'),
+                'salary_max': item.get('salary_max'),
+                'employment_type': item.get('contract_time') or item.get('contract_type'),
+                'description': item.get('description', ''),
+                'created': item.get('created', ''),
+                'redirect_url': item.get('redirect_url', '')
+            })
+
+        return live_jobs
     
     def get_skills_taxonomy(self) -> Dict[str, Any]:
         """

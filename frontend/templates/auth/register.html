@@ -7,6 +7,7 @@
 
 {% block auth_content %}
 <form method="POST" action="/register" id="registerForm" novalidate>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     
     <!-- Name Fields -->
     <div class="row mb-3">

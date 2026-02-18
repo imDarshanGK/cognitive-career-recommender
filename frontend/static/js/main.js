@@ -37,8 +37,6 @@ const CognitiveCareerAI = {
         this.initializeTooltips();
         this.initializeModals();
         this.loadUserState();
-        
-        console.log('🧠 Cognitive Career AI initialized');
     }
 };
 
@@ -347,17 +345,39 @@ CognitiveCareerAI.showAlert = function(type, message, options = {}) {
     
     alertContainer.insertAdjacentHTML('beforeend', alertHTML);
     
-    // Auto-dismiss success and info alerts
-    if ((type === 'success' || type === 'info') && !options.persistent) {
+    // Auto-dismiss alerts based on type (unless persistent is set)
+    if (options.persistent !== true) {
+        let duration = 15000; // Default: 15 seconds
+        
+        // Set duration based on alert type
+        switch(type) {
+            case 'warning':
+                duration = options.duration || 2500; // Warning: 2.5 seconds
+                break;
+            case 'error':
+                duration = options.duration || 5000; // Error: 5 seconds
+                break;
+            case 'success':
+            case 'info':
+                duration = options.duration || 15000; // Success/info: 15 seconds
+                break;
+            default:
+                duration = options.duration || 3000; // Others: 3 seconds
+        }
+        
+        // Auto-dismiss the alert
         setTimeout(() => {
             const alertElement = document.getElementById(alertId);
             if (alertElement) {
-                const bsAlert = bootstrap.Alert.getInstance(alertElement);
-                if (bsAlert) {
-                    bsAlert.close();
-                }
+                // Trigger Bootstrap's fade-out animation then remove
+                alertElement.classList.remove('show');
+                setTimeout(() => {
+                    if (alertElement.parentElement) {
+                        alertElement.remove();
+                    }
+                }, 150); // Give time for fade animation
             }
-        }, options.duration || 5000);
+        }, duration);
     }
 };
 

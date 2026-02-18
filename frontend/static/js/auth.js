@@ -32,9 +32,11 @@ const AuthModule = {
         this.setupEventListeners();
         this.initializePasswordToggles();
         this.initializeFormValidation();
-        
-        console.log('Authentication module initialized');
     }
+};
+
+AuthModule.getCsrfToken = function() {
+    return document.querySelector('meta[name="csrf-token"]')?.content || '';
 };
 
 /**
@@ -334,11 +336,14 @@ AuthModule.checkEmailAvailability = function(email) {
     const checkEmailUrl = document.querySelector('[data-check-email-url]')?.dataset.checkEmailUrl;
     if (!checkEmailUrl) return;
     
+    const csrfToken = this.getCsrfToken();
+
     fetch(checkEmailUrl, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest'
+            'X-Requested-With': 'XMLHttpRequest',
+            ...(csrfToken ? { 'X-CSRFToken': csrfToken } : {})
         },
         body: JSON.stringify({ email: email })
     })
@@ -368,12 +373,14 @@ AuthModule.checkEmailAvailability = function(email) {
  */
 AuthModule.submitForm = async function(url, formData) {
     try {
+        const csrfToken = this.getCsrfToken();
         const response = await fetch(url, {
             method: 'POST',
             body: formData,
             credentials: 'same-origin',
             headers: {
-                'X-Requested-With': 'XMLHttpRequest'
+                'X-Requested-With': 'XMLHttpRequest',
+                ...(csrfToken ? { 'X-CSRFToken': csrfToken } : {})
             }
         });
         
