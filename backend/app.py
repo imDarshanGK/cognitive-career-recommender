@@ -14,8 +14,12 @@ import sqlite3
 import logging
 import tempfile
 import shutil
+import smtplib
+import re
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 from functools import wraps
-from datetime import datetime
+from datetime import datetime, timezone
 
 # Add backend directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -99,7 +103,7 @@ def _save_feedback(user_id, role, feedback):
     with sqlite3.connect(FEEDBACK_DB) as conn:
         conn.execute(
             "INSERT INTO feedback (user_id, role, feedback, created_at) VALUES (?, ?, ?, ?)",
-            (user_id, role, feedback, datetime.utcnow().isoformat())
+            (user_id, role, feedback, datetime.now(timezone.utc).isoformat())
         )
 
 
@@ -142,6 +146,106 @@ def _delete_feedback(user_id, feedback_id):
             return True
     except Exception as e:
         logger.error(f"Error deleting feedback: {e}")
+        return False
+
+def send_verification_email(email, verification_token, first_name):
+    """Send email verification link to user"""
+    try:
+        # Check if email configuration is available
+        mail_username = app.config.get('MAIL_USERNAME')
+        mail_password = app.config.get('MAIL_PASSWORD')
+        
+        if not mail_username or not mail_password or mail_username == 'your-email@gmail.com':
+            logger.warning(f"Email not configured. Skipping email send for {email}. Token: {verification_token}")
+            return False
+        
+        # Create verification link
+        verification_link = f"http://localhost:5000/verify-email/{verification_token}"
+        
+        # Create email message
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = 'Verify Your Email - CareerAI'
+        msg['From'] = app.config.get('MAIL_DEFAULT_SENDER')
+        msg['To'] = email
+        
+        # HTML version of email
+        html_content = f"""
+        <html>
+            <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+                <div style="max-width: 600px; margin: 0 auto;">
+                    <div style="background: linear-gradient(135deg, #1b3a6b, #275395); color: white; padding: 30px; border-radius: 8px 8px 0 0; text-align: center;">
+                        <h1 style="margin: 0; font-size: 28px;">CareerAI</h1>
+                        <p style="margin: 5px 0 0 0; font-size: 14px;">Verify Your Email</p>
+                    </div>
+                    
+                    <div style="padding: 30px; background: #f5f7fa; border-radius: 0 0 8px 8px;">
+                        <h2 style="color: #1b3a6b; margin-top: 0;">Hello {first_name},</h2>
+                        
+                        <p>Thank you for creating an account with CareerAI! To get started with your personalized career recommendations, please verify your email address by clicking the link below.</p>
+                        
+                        <div style="text-align: center; margin: 30px 0;">
+                            <a href="{verification_link}" style="display: inline-block; background: linear-gradient(135deg, #1b3a6b, #275395); color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">
+                                Verify Email Address
+                            </a>
+                        </div>
+                        
+                        <p style="color: #666; font-size: 13px;">Or copy this link into your browser:</p>
+                        <p style="background: white; padding: 12px; border-radius: 4px; word-break: break-all; font-size: 12px; color: #0066cc;">
+                            {verification_link}
+                        </p>
+                        
+                        <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
+                        
+                        <p style="color: #666; font-size: 13px;">
+                            This verification link will expire in 1 hour. If you didn't create this account, you can safely ignore this email.
+                        </p>
+                        
+                        <p style="color: #999; font-size: 12px; margin-top: 20px;">
+                            Best regards,<br>
+                            <strong>CareerAI Team</strong>
+                        </p>
+                    </div>
+                </div>
+            </body>
+        </html>
+        """
+        
+        # Plain text version
+        text_content = f"""
+        Hello {first_name},
+        
+        Thank you for creating an account with CareerAI! To get started with your personalized career recommendations, please verify your email address by clicking the link below:
+        
+        {verification_link}
+        
+        This verification link will expire in 1 hour. If you didn't create this account, you can safely ignore this email.
+        
+        Best regards,
+        CareerAI Team
+        """
+        
+        # Attach both versions
+        msg.attach(MIMEText(text_content, 'plain'))
+        msg.attach(MIMEText(html_content, 'html'))
+        
+        # Send email via SMTP
+        try:
+            server = smtplib.SMTP(app.config.get('MAIL_SERVER'), app.config.get('MAIL_PORT'))
+            server.starttls()
+            server.login(mail_username, mail_password)
+            server.send_message(msg)
+            server.quit()
+            logger.info(f"Verification email sent successfully to {email}")
+            return True
+        except smtplib.SMTPAuthenticationError:
+            logger.error(f"SMTP authentication failed. Check MAIL_USERNAME and MAIL_PASSWORD in .env")
+            return False
+        except smtplib.SMTPException as e:
+            logger.error(f"SMTP error sending email to {email}: {e}")
+            return False
+            
+    except Exception as e:
+        logger.error(f"Error sending verification email to {email}: {e}")
         return False
 
 # Initialize AI components with error handling
@@ -294,11 +398,20 @@ def _build_structured_profile(resume_data):
     return result
 
 def login_required(f):
-    """Decorator to require login for protected routes"""
+    """Decorator to require login AND email verification for protected routes"""
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if 'user_id' not in session:
             return redirect(url_for('login'))
+        
+        # Verify user still exists and email is verified
+        user_id = session.get('user_id')
+        user = users_db.get(user_id)
+        if not user or not user.get('email_verified', False):
+            session.clear()
+            flash('Session expired or email not verified. Please log in again.', 'error')
+            return redirect(url_for('login'))
+        
         return f(*args, **kwargs)
     return decorated_function
 
@@ -326,9 +439,19 @@ def login():
             return render_template('auth/login.html'), 400
         
         user = users_db.get(email)
+        
+        # Check if user exists and password is correct
         if user and verify_password(password, user['password_hash']):
+            # Check if email is verified
+            if not user.get('email_verified', False):
+                return jsonify({
+                    'success': False,
+                    'message': 'Please verify your email before logging in. Check your email for verification link.'
+                }), 403
+            
             session['user_id'] = email
             session['user_name'] = f"{user['first_name']} {user['last_name']}"
+            session.permanent = True
             flash('Login successful!', 'success')
             return jsonify({
                 'success': True, 
@@ -344,6 +467,28 @@ def login():
     
     return render_template('auth/login.html')
 
+def validate_password_strength(password):
+    """
+    Validate password strength requirements:
+    - 8+ characters
+    - At least 1 uppercase letter
+    - At least 1 number
+    - At least 1 special character
+    """
+    import re
+    
+    errors = []
+    if len(password) < 8:
+        errors.append('Password must be at least 8 characters long')
+    if not re.search(r'[A-Z]', password):
+        errors.append('Password must contain at least one uppercase letter')
+    if not re.search(r'[0-9]', password):
+        errors.append('Password must contain at least one number')
+    if not re.search(r'[!@#$%^&*()_+\-=\[\]{};:\'",.<>?/\\|`~]', password):
+        errors.append('Password must contain at least one special character (!@#$%^&* etc.)')
+    
+    return errors
+
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     """Handle user registration"""
@@ -353,6 +498,7 @@ def register():
         email = request.form.get('email', '').strip().lower()
         password = request.form.get('password', '')
         confirm_password = request.form.get('confirm_password', '')
+        profession = request.form.get('profession', '').strip()
         
         # Validation
         errors = []
@@ -362,8 +508,16 @@ def register():
             errors.append('Last name is required')
         if not email or '@' not in email:
             errors.append('Valid email is required')
-        if not password or len(password) < 8:
-            errors.append('Password must be at least 8 characters long')
+        if not profession:
+            errors.append('Current role is required')
+        
+        # Password validation with strength requirements
+        if not password:
+            errors.append('Password is required')
+        else:
+            password_errors = validate_password_strength(password)
+            errors.extend(password_errors)
+        
         if password != confirm_password:
             errors.append('Passwords do not match')
         if email in users_db:
@@ -375,32 +529,58 @@ def register():
                 'errors': errors
             }), 400
         
-        # Create new user
+        # Create new user (NOT verified yet)
+        verification_token = secrets.token_urlsafe(32)
         users_db[email] = {
             'password_hash': hash_password(password),
             'first_name': first_name,
             'last_name': last_name,
             'email': email,
-            'created_at': datetime.utcnow().isoformat()
+            'profession': profession,
+            'email_verified': False,
+            'verification_token': verification_token,
+            'created_at': datetime.now(timezone.utc).isoformat()
         }
         
-        # Auto-login after registration
-        session['user_id'] = email
-        session['user_name'] = f"{first_name} {last_name}"
+        # Send verification email
+        email_sent = send_verification_email(email, verification_token, first_name)
         
         return jsonify({
             'success': True,
-            'redirect_url': '/dashboard',
-            'message': 'Account created successfully!'
+            'redirect_url': '/verify-email-notice',
+            'message': 'Account created! Please check your email to verify your account.'
         })
     
     return render_template('auth/register.html')
 
 @app.route('/logout')
 def logout():
-    """Handle user logout"""
+    """Handle user logout - clear all session and authentication data"""
     session.clear()
+    response = jsonify({
+        'success': True,
+        'message': 'You have been logged out successfully'
+    })
+    response.set_cookie('session', '', expires=0)
     flash('You have been logged out successfully', 'info')
+    return redirect(url_for('index'))
+
+@app.route('/verify-email-notice')
+def verify_email_notice():
+    """Show email verification notice"""
+    return render_template('auth/verify_email_notice.html')
+
+@app.route('/verify-email/<token>')
+def verify_email(token):
+    """Verify user email with token"""
+    for email, user in users_db.items():
+        if user.get('verification_token') == token and not user.get('email_verified', False):
+            user['email_verified'] = True
+            user['verification_token'] = None  # Clear token after use
+            flash('Email verified successfully! You can now log in.', 'success')
+            return redirect(url_for('login'))
+    
+    flash('Invalid or expired verification link.', 'error')
     return redirect(url_for('index'))
 
 @app.route('/forgot-password', methods=['GET', 'POST'])
@@ -606,7 +786,7 @@ def collect_feedback():
         return jsonify({'error': f'Error saving feedback: {str(e)}'}), 500
 
     feedback_data['user_id'] = user_id
-    feedback_data['timestamp'] = datetime.utcnow().isoformat()
+    feedback_data['timestamp'] = datetime.now(timezone.utc).isoformat()
 
     if cognitive_engine:
         try:

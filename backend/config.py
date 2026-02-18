@@ -58,6 +58,15 @@ class Config:
     }
     ADZUNA_RESULTS_PER_PAGE = int(os.environ.get('ADZUNA_RESULTS_PER_PAGE', '10'))
     
+    # Email settings for verification
+    MAIL_SERVER = os.environ.get('MAIL_SERVER', 'smtp.gmail.com')
+    MAIL_PORT = int(os.environ.get('MAIL_PORT', 587))
+    MAIL_USE_TLS = os.environ.get('MAIL_USE_TLS', 'True').lower() in ('true', '1', 't')
+    MAIL_USERNAME = os.environ.get('MAIL_USERNAME')
+    MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD')
+    MAIL_DEFAULT_SENDER = os.environ.get('MAIL_DEFAULT_SENDER', 'noreply@careerrecommender.com')
+    VERIFY_EMAIL_TIMEOUT = int(os.environ.get('VERIFY_EMAIL_TIMEOUT', '3600'))  # 1 hour
+    
     # Explainable AI settings
     SHAP_SAMPLE_SIZE = 1000
     LIME_NUM_FEATURES = 20
