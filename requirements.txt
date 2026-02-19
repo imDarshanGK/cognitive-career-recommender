@@ -1,4 +1,5 @@
 --prefer-binary
+Cython
 # Build Tools
 setuptools>=70.0.0
 wheel>=0.43.0
