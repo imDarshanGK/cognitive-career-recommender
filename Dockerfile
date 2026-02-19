@@ -5,6 +5,9 @@ WORKDIR /app
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
     gcc \
+    g++ \
+    make \
+    libatlas-base-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Upgrade pip, wheel, setuptools to latest
