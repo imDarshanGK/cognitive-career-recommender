@@ -380,7 +380,7 @@ CognitiveCareerAI.showAlert = function(type, message, options = {}) {
                 duration = options.duration || 2500; // Warning: 2.5 seconds
                 break;
             case 'error':
-                duration = options.duration || 5000; // Error: 5 seconds
+                duration = options.duration || 3500; // Error: 3.5 seconds (was 5 seconds)
                 break;
             case 'success':
             case 'info':
