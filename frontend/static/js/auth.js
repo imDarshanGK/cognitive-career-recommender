@@ -55,19 +55,28 @@ AuthModule.setupEventListeners = function() {
     const registerForm = document.getElementById('registerForm');
     if (registerForm) {
         registerForm.addEventListener('submit', (e) => this.handleRegistration(e));
-        
+
         // Real-time validation
         const emailField = registerForm.querySelector('#email');
         if (emailField) {
             emailField.addEventListener('blur', (e) => this.validateEmail(e.target));
             emailField.addEventListener('blur', (e) => this.checkEmailAvailability(e.target.value));
         }
-        
+
         const passwordField = registerForm.querySelector('#password');
         if (passwordField) {
             passwordField.addEventListener('input', (e) => this.checkPasswordStrength(e.target.value));
+            // Show password requirements on focus, hide on blur if empty
+            passwordField.addEventListener('focus', () => {
+                const reqList = document.getElementById('passwordRequirements');
+                if (reqList) reqList.style.display = 'block';
+            });
+            passwordField.addEventListener('blur', () => {
+                const reqList = document.getElementById('passwordRequirements');
+                if (reqList && !passwordField.value) reqList.style.display = 'none';
+            });
         }
-        
+
         const confirmPasswordField = registerForm.querySelector('#confirm_password');
         if (confirmPasswordField) {
             confirmPasswordField.addEventListener('input', () => this.validatePasswordMatch());
@@ -410,7 +419,7 @@ AuthModule.handleLogin = function(e) {
     if (!this.validateForm(form)) return;
     
     // Set loading state
-    this.setSubmissionState(true, 'Signing in...');
+    this.setSubmissionState(true, 'Signing In...');
     
     // Submit login - use form action or default to /login
     const submitUrl = form.action || '/login';
@@ -622,24 +631,35 @@ AuthModule.showAlert = function(type, message) {
         window.CognitiveCareerAI.showAlert(type, message);
         return;
     }
-    
+
     const alertContainer = document.querySelector('.alert-container') || 
                           document.querySelector('.auth-card-body') ||
                           document.body;
-    
+
     // Remove existing alerts to prevent duplicates
     const existingAlerts = alertContainer.querySelectorAll('.alert');
     existingAlerts.forEach(alert => alert.remove());
-    
+
+    const alertId = 'alert-' + Date.now();
     const alertHTML = `
-        <div class="alert alert-${type === 'error' ? 'danger' : type} alert-dismissible fade show" role="alert">
+        <div id="${alertId}" class="alert alert-${type === 'error' ? 'danger' : type} alert-dismissible fade show" role="alert" style="transition: opacity 0.5s;">
             <i class="fas fa-${type === 'error' ? 'exclamation-circle' : 'check-circle'} me-2"></i>
             ${message}
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
     `;
-    
+
     alertContainer.insertAdjacentHTML('afterbegin', alertHTML);
+
+    // Fade out after 6 seconds, but allow manual close
+    setTimeout(() => {
+        const alertElem = document.getElementById(alertId);
+        if (alertElem) {
+            alertElem.classList.remove('show');
+            alertElem.classList.add('fade');
+            setTimeout(() => { if (alertElem) alertElem.remove(); }, 500);
+        }
+    }, 6000);
 };
 
 AuthModule.showPasswordResetSuccess = function(email) {

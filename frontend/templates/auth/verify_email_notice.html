@@ -7,17 +7,21 @@
 
 {% block auth_content %}
 <div class="text-center">
+    {% if request.args.get('success') == '1' %}
+    <div class="alert alert-success alert-dismissible fade show" role="alert" style="max-width: 500px; margin: 0 auto 20px auto;">
+        <i class="fas fa-check-circle me-2"></i>
+        Account created successfully! Please check your email to verify your account.
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endif %}
     <div style="margin-bottom: 30px;">
         <i class="fas fa-envelope-open-text" style="font-size: 3rem; color: #15a6a0;"></i>
     </div>
-    
     <h6 style="font-size: 1.1rem; margin-bottom: 15px; color: #333;">Verification Email Sent</h6>
-    
     <p style="color: #666; margin-bottom: 20px; line-height: 1.6;">
         We've sent a verification link to your email address.<br>
         Please click the link in the email to verify your account.
     </p>
-    
     <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 25px; text-align: left;">
         <p style="margin: 0 0 10px 0; color: #666;"><strong>What's next?</strong></p>
         <ul style="margin: 0; padding-left: 20px; color: #666;">
@@ -26,11 +30,13 @@
             <li>Return here and log in to your account</li>
         </ul>
     </div>
-    
     <p style="color: #999; font-size: 0.9rem; margin-bottom: 20px;">
-        Didn't receive the email? Check your spam or junk folder.
+        Didn't receive the email? Check your spam or junk folder.<br>
+        <form method="POST" action="/resend-verification" style="display:inline;">
+            <input type="hidden" name="email" value="{{ request.args.get('email', '') }}">
+            <button type="submit" class="btn btn-link p-0 align-baseline" style="font-size:0.95em;">Resend verification email</button>
+        </form>
     </p>
-    
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
         <a href="/login" class="btn btn-primary" style="text-decoration: none;">
             <i class="fas fa-sign-in-alt me-2"></i>Go to Login

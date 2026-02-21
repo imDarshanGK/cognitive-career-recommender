@@ -1,3 +1,18 @@
+/* Minimal button hover animation */
+.btn, button {
+  transition: background 0.2s, color 0.2s, box-shadow 0.2s, transform 0.15s;
+}
+.btn:hover, button:hover {
+  box-shadow: 0 4px 16px rgba(21, 166, 160, 0.08), 0 1.5px 4px rgba(0,0,0,0.04);
+  transform: translateY(-2px) scale(1.03);
+  filter: brightness(1.04);
+}
+/* Softer error alert style */
+.alert-danger {
+  background-color: #fff4f4 !important;
+  border-color: #f5c2c7 !important;
+  color: #a94442 !important;
+}
 /*
 ========================================
 COGNITIVE CAREER AI - MAIN STYLESHEET

@@ -39,24 +39,8 @@
         </div>
     </div>
     
-    <!-- Email Field -->
-    <div class="mb-3">
-        <label for="email" class="form-label">
-            <i class="fas fa-envelope me-1"></i>Email Address <span class="text-danger">*</span>
-        </label>
-        <input type="email" 
-               class="form-control form-control-lg" 
-               id="email" 
-               name="email" 
-               placeholder="john.doe@example.com"
-               value="{{ request.form.email }}"
-               required>
-        <div class="invalid-feedback" id="email-error"></div>
-        <small class="form-text">We'll send a verification link to confirm your email.</small>
-    </div>
-    
     <!-- Password Fields -->
-    <div class="mb-3">
+    <div class="mb-3 position-relative">
         <label for="password" class="form-label">
             <i class="fas fa-lock me-1"></i>Password <span class="text-danger">*</span>
         </label>
@@ -65,9 +49,29 @@
                    class="form-control form-control-lg" 
                    id="password" 
                    name="password" 
-                   placeholder="Create a strong password"
+                   placeholder="Create a password"
                    required
-                   minlength="8">
+                   data-bs-toggle="tooltip"
+                   data-bs-placement="right"
+                   title="Password must be at least 8 characters, include uppercase, lowercase, number, and special character."
+            >
+            <button type="button" class="btn btn-outline-secondary" id="togglePassword" data-target="password">
+                <i class="fas fa-eye"></i>
+            </button>
+        </div>
+        <div class="invalid-feedback" id="password-error"></div>
+        <div class="progress mt-2" style="height: 6px;">
+            <div id="passwordStrengthBar" class="progress-bar bg-danger" style="width: 0%;"></div>
+        </div>
+        <small id="passwordStrengthText" class="form-text text-muted"></small>
+        <ul class="list-unstyled mt-2" id="passwordRequirements" style="display:none;">
+            <li id="req-length" class="text-muted"><i class="fas fa-times me-1"></i> At least 8 characters</li>
+            <li id="req-lowercase" class="text-muted"><i class="fas fa-times me-1"></i> One lowercase letter</li>
+            <li id="req-uppercase" class="text-muted"><i class="fas fa-times me-1"></i> One uppercase letter</li>
+            <li id="req-number" class="text-muted"><i class="fas fa-times me-1"></i> One number</li>
+            <li id="req-special" class="text-muted"><i class="fas fa-times me-1"></i> One special character (!@#$%^&amp;*)</li>
+        </ul>
+    </div>
             <button type="button" class="btn btn-outline-secondary" id="togglePassword" data-target="password">
                 <i class="fas fa-eye"></i>
             </button>
@@ -105,28 +109,6 @@
         <div class="invalid-feedback" id="confirm_password-error"></div>
     </div>
     
-    <!-- Professional Info -->
-    <div class="mb-3">
-        <label for="profession" class="form-label">
-            <i class="fas fa-briefcase me-1"></i>Current Role <span class="text-danger">*</span>
-        </label>
-        <select class="form-select form-select-lg" id="profession" name="profession" required>
-            <option value="">Select your current role</option>
-            <option value="Student">Student</option>
-            <option value="Fresher">Fresher (0-1 year experience)</option>
-            <option value="Working Professional">Working Professional</option>
-            <option value="Career Switcher">Career Switcher</option>
-            <option value="Software Developer">Software Developer</option>
-            <option value="Data Scientist">Data Scientist</option>
-            <option value="Product Manager">Product Manager</option>
-            <option value="Designer">Designer</option>
-            <option value="Business Analyst">Business Analyst</option>
-            <option value="Engineer">Engineer</option>
-            <option value="Other">Other</option>
-        </select>
-        <div class="invalid-feedback" id="profession-error"></div>
-        <small class="form-text">This helps us personalize your career recommendations.</small>
-    </div>
     
     <!-- Terms and Privacy -->
     <div class="mb-4">
@@ -150,6 +132,18 @@
         </span>
     </button>
     
+</form>
+    <div class="text-center mt-3 mb-2">
+        <small class="text-muted d-block mb-1">
+            <i class="fas fa-lock me-1"></i>Your data is secure. We never share personal information.
+        </small>
+        <small class="text-muted">
+            By registering, you agree to our
+            <a href="/privacy-policy" target="_blank" class="text-decoration-underline">Privacy Policy</a>
+            and
+            <a href="/terms-of-service" target="_blank" class="text-decoration-underline">Terms of Service</a>.
+        </small>
+    </div>
 </form>
 {% endblock %}
 

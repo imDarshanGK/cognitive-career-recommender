@@ -1,3 +1,4 @@
+
 """
 Cognitive Career & Job Recommendation System with Explainable and Adaptive AI
 Main Flask Application Entry Point
@@ -19,7 +20,7 @@ import re
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from functools import wraps
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 # Add backend directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -35,6 +36,30 @@ app = Flask(__name__,
             template_folder=os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'frontend', 'templates'),
             static_folder=os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'frontend', 'static'))
 app.config.from_object(Config)
+
+# Resend verification email route (moved here so 'app' is defined)
+@app.route('/resend-verification', methods=['POST'])
+def resend_verification():
+    email = request.form.get('email', '').strip().lower()
+    user = users_db.get(email)
+    if not user:
+        flash('User not found.', 'error')
+        return redirect(url_for('verify_email_notice', email=email))
+    if user.get('email_verified', False):
+        flash('Email already verified. Please log in.', 'info')
+        return redirect(url_for('login'))
+    # Generate new token
+    verification_token = secrets.token_urlsafe(32)
+    user['verification_token'] = verification_token
+    mail_username = app.config.get('MAIL_USERNAME')
+    mail_configured = mail_username and mail_username != 'your-email@gmail.com'
+    if mail_configured:
+        send_verification_email(email, verification_token, user.get('first_name', ''))
+        flash('Verification email resent. Please check your inbox.', 'success')
+    else:
+        logger.warning(f"EMAIL NOT CONFIGURED - Token: {verification_token}")
+        flash('Email not configured. Token logged to server.', 'info')
+    return redirect(url_for('verify_email_notice', email=email))
 
 # Configure logging
 logging.basicConfig(
@@ -426,9 +451,11 @@ def index():
 def login():
     """Handle user login"""
     if request.method == 'POST':
+        # Always clear session on login POST to prevent old session reuse
+        session.clear()
         email = request.form.get('email', '').strip().lower()
         password = request.form.get('password', '')
-        
+
         if not email or not password:
             flash('Email and password are required', 'error')
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
@@ -437,34 +464,72 @@ def login():
                     'message': 'Email and password are required'
                 }), 400
             return render_template('auth/login.html'), 400
-        
+
+
         user = users_db.get(email)
-        
+        now = datetime.now(timezone.utc)
+        # Account lockout logic
+        if user:
+            # Initialize tracking fields if not present
+            if 'failed_attempts' not in user:
+                user['failed_attempts'] = 0
+            if 'lockout_until' not in user:
+                user['lockout_until'] = None
+            # Check if account is locked
+            if user['lockout_until']:
+                if now < user['lockout_until']:
+                    lock_minutes = int((user['lockout_until'] - now).total_seconds() // 60) + 1
+                    flash('Account locked due to too many failed attempts. Try again in {} minute(s).'.format(lock_minutes), 'error')
+                    return jsonify({
+                        'success': False,
+                        'message': f'Account locked. Try again in {lock_minutes} minute(s).'
+                    }), 403
+                else:
+                    user['lockout_until'] = None
+                    user['failed_attempts'] = 0
+
         # Check if user exists and password is correct
-        if user and verify_password(password, user['password_hash']):
+        if user and verify_password(password, user.get('password_hash', '')):
+            # Reset failed attempts on success
+            user['failed_attempts'] = 0
+            user['lockout_until'] = None
             # Check if email is verified
             if not user.get('email_verified', False):
+                session.clear()
                 return jsonify({
                     'success': False,
                     'message': 'Please verify your email before logging in. Check your email for verification link.'
                 }), 403
-            
+
+            # Set session only after all checks
             session['user_id'] = email
-            session['user_name'] = f"{user['first_name']} {user['last_name']}"
+            session['user_name'] = f"{user.get('first_name','')} {user.get('last_name','')}"
             session.permanent = True
             flash('Login successful!', 'success')
             return jsonify({
-                'success': True, 
+                'success': True,
                 'redirect_url': '/dashboard',
                 'message': 'Login successful!'
             })
         else:
+            # Increment failed attempts
+            if user:
+                user['failed_attempts'] = user.get('failed_attempts', 0) + 1
+                # Lock account for 15 minutes after 5 failed attempts
+                if user['failed_attempts'] >= 5:
+                    user['lockout_until'] = now + timedelta(minutes=15)
+                    flash('Account locked due to too many failed attempts. Try again in 15 minutes.', 'error')
+                    return jsonify({
+                        'success': False,
+                        'message': 'Account locked. Try again in 15 minutes.'
+                    }), 403
+            session.clear()
             flash('Invalid email or password', 'error')
             return jsonify({
                 'success': False,
                 'message': 'Invalid email or password'
             }), 401
-    
+
     return render_template('auth/login.html')
 
 def validate_password_strength(password):
@@ -498,8 +563,7 @@ def register():
         email = request.form.get('email', '').strip().lower()
         password = request.form.get('password', '')
         confirm_password = request.form.get('confirm_password', '')
-        profession = request.form.get('profession', '').strip()
-        
+        # No profession field in registration
         # Validation
         errors = []
         if not first_name:
@@ -508,52 +572,42 @@ def register():
             errors.append('Last name is required')
         if not email or '@' not in email:
             errors.append('Valid email is required')
-        if not profession:
-            errors.append('Current role is required')
-        
         # Password validation with strength requirements
         if not password:
             errors.append('Password is required')
         else:
             password_errors = validate_password_strength(password)
             errors.extend(password_errors)
-        
         if password != confirm_password:
             errors.append('Passwords do not match')
         if email in users_db:
             errors.append('Email is already registered')
-        
         if errors:
             return jsonify({
                 'success': False,
                 'errors': errors
             }), 400
-        
         # Create new user (NOT verified yet)
         verification_token = secrets.token_urlsafe(32)
-        
         # Check if email service is configured
         mail_username = app.config.get('MAIL_USERNAME')
         mail_configured = mail_username and mail_username != 'your-email@gmail.com'
-        
         users_db[email] = {
             'password_hash': hash_password(password),
             'first_name': first_name,
             'last_name': last_name,
             'email': email,
-            'profession': profession,
+            'profession': '',  # Will be set in profile setup
             'email_verified': False if mail_configured else True,  # Auto-verify if no email service
             'verification_token': verification_token if mail_configured else None,
             'created_at': datetime.now(timezone.utc).isoformat()
         }
-        
         # Send verification email if configured
         if mail_configured:
             email_sent = send_verification_email(email, verification_token, first_name)
-            
             return jsonify({
                 'success': True,
-                'redirect_url': '/verify-email-notice',
+                'redirect_url': '/verify-email-notice?success=1',
                 'message': 'Account created! Please check your email to verify your account.'
             })
         else:
@@ -561,11 +615,11 @@ def register():
             verification_url = f"http://localhost:5000/verify-email/{verification_token}"
             logger.warning(f"EMAIL NOT CONFIGURED - Auto-verified user: {email}")
             logger.warning(f"Verification URL (if needed): {verification_url}")
-            
+            # Still show verify email notice for consistent UX
             return jsonify({
                 'success': True,
-                'redirect_url': '/login',
-                'message': 'Account created successfully! You can now log in.'
+                'redirect_url': '/verify-email-notice?success=1',
+                'message': 'Account created! Please check your email to verify your account.'
             })
     
     return render_template('auth/register.html')
@@ -594,11 +648,24 @@ def verify_email(token):
         if user.get('verification_token') == token and not user.get('email_verified', False):
             user['email_verified'] = True
             user['verification_token'] = None  # Clear token after use
-            flash('Email verified successfully! You can now log in.', 'success')
-            return redirect(url_for('login'))
-    
+            flash('Email verified successfully! Please complete your profile.', 'success')
+            session['user_id'] = email
+            return redirect(url_for('profile'))
     flash('Invalid or expired verification link.', 'error')
     return redirect(url_for('index'))
+# Profile setup route
+@app.route('/profile', methods=['GET', 'POST'])
+@login_required
+def profile():
+    user_email = session.get('user_id')
+    user = users_db.get(user_email, {})
+    if request.method == 'POST':
+        # Save profile fields (e.g., profession)
+        profession = request.form.get('profession', '').strip()
+        if profession:
+            user['profession'] = profession
+            flash('Profile updated successfully!', 'success')
+    return render_template('auth/profile.html', user=user)
 
 @app.route('/forgot-password', methods=['GET', 'POST'])
 def forgot_password():
