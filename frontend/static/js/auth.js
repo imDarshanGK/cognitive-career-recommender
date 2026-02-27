@@ -66,15 +66,7 @@ AuthModule.setupEventListeners = function() {
         const passwordField = registerForm.querySelector('#password');
         if (passwordField) {
             passwordField.addEventListener('input', (e) => this.checkPasswordStrength(e.target.value));
-            // Show password requirements on focus, hide on blur if empty
-            passwordField.addEventListener('focus', () => {
-                const reqList = document.getElementById('passwordRequirements');
-                if (reqList) reqList.style.display = 'block';
-            });
-            passwordField.addEventListener('blur', () => {
-                const reqList = document.getElementById('passwordRequirements');
-                if (reqList && !passwordField.value) reqList.style.display = 'none';
-            });
+            // Always show requirements, so no need to hide/show
         }
 
         const confirmPasswordField = registerForm.querySelector('#confirm_password');
@@ -289,11 +281,11 @@ AuthModule.updatePasswordRequirements = function(password) {
         const element = document.getElementById(req.id);
         if (element) {
             element.classList.toggle('text-success', req.met);
-            element.classList.toggle('text-muted', !req.met);
-            
+            element.classList.toggle('text-danger', !req.met);
+            element.classList.remove('text-muted');
             const icon = element.querySelector('i');
             if (icon) {
-                icon.className = req.met ? 'fas fa-check' : 'fas fa-times';
+                icon.className = req.met ? 'fas fa-check me-1' : 'fas fa-times me-1';
             }
         }
     });
@@ -641,8 +633,10 @@ AuthModule.showAlert = function(type, message) {
     existingAlerts.forEach(alert => alert.remove());
 
     const alertId = 'alert-' + Date.now();
+    // Use a softer red for error alerts
+    const customStyle = type === 'error' ? 'background-color: #ffeaea; color: #a94442; border-color: #f5c6cb;' : '';
     const alertHTML = `
-        <div id="${alertId}" class="alert alert-${type === 'error' ? 'danger' : type} alert-dismissible fade show" role="alert" style="transition: opacity 0.5s;">
+        <div id="${alertId}" class="alert alert-${type === 'error' ? 'danger' : type} alert-dismissible fade show" role="alert" style="transition: opacity 0.5s; ${customStyle}">
             <i class="fas fa-${type === 'error' ? 'exclamation-circle' : 'check-circle'} me-2"></i>
             ${message}
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
@@ -651,7 +645,7 @@ AuthModule.showAlert = function(type, message) {
 
     alertContainer.insertAdjacentHTML('afterbegin', alertHTML);
 
-    // Fade out after 6 seconds, but allow manual close
+    // Fade out after 8 seconds, but allow manual close
     setTimeout(() => {
         const alertElem = document.getElementById(alertId);
         if (alertElem) {
@@ -659,7 +653,7 @@ AuthModule.showAlert = function(type, message) {
             alertElem.classList.add('fade');
             setTimeout(() => { if (alertElem) alertElem.remove(); }, 500);
         }
-    }, 6000);
+    }, 8000);
 };
 
 AuthModule.showPasswordResetSuccess = function(email) {

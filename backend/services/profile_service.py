@@ -1,34 +1,30 @@
 """
 Profile Service
-Manages user profile creation and updates
+Manages user profile creation, skill synchronization, and metadata updates.
 """
 
 from models import db, UserProfile, UserSkill
+import logging
+
+logger = logging.getLogger(__name__)
 
 class ProfileService:
     @staticmethod
-    def create_profile(user_id, education_level=None, branch=None, experience_years=0, preferred_domains=None):
-        """Create user profile"""
+    def create_or_update_profile(user_id, **kwargs):
+        """
+        Maintains a single user profile using keyword arguments for flexibility.
+        """
         profile = UserProfile.query.filter_by(user_id=user_id).first()
         
-        if profile:
-            # Update existing profile
-            profile.education_level = education_level or profile.education_level
-            profile.branch = branch or profile.branch
-            profile.experience_years = experience_years or profile.experience_years
-            profile.preferred_domains = preferred_domains or profile.preferred_domains
-        else:
-            # Create new profile
-            profile = UserProfile(
-                user_id=user_id,
-                education_level=education_level,
-                branch=branch,
-                experience_years=experience_years,
-                preferred_domains=preferred_domains
-            )
+        if not profile:
+            profile = UserProfile(user_id=user_id)
             db.session.add(profile)
+
+        # Map dynamic attributes
+        for key, value in kwargs.items():
+            if hasattr(profile, key) and value is not None:
+                setattr(profile, key, value)
         
-        # Calculate completeness
         ProfileService.calculate_completeness(profile)
         
         try:
@@ -37,55 +33,53 @@ class ProfileService:
         except Exception as e:
             db.session.rollback()
             return None, str(e)
-    
+
     @staticmethod
-    def add_skill(user_id, skill_name, skill_level='intermediate', years_experience=0):
-        """Add or update user skill"""
-        skill = UserSkill.query.filter_by(user_id=user_id, skill_name=skill_name).first()
-        
-        if skill:
-            skill.skill_level = skill_level
-            skill.years_experience = years_experience
-        else:
-            skill = UserSkill(
-                user_id=user_id,
-                skill_name=skill_name,
-                skill_level=skill_level,
-                years_experience=years_experience
-            )
-            db.session.add(skill)
-        
+    def sync_skills(user_id, skill_list):
+        """
+        Synchronizes a list of skills (usually from the SkillExtractor).
+        Replaces or updates skills in a single transaction.
+        """
         try:
+            # For simplicity, we'll update or add. 
+            # In a full sync, you might want to remove skills not in the list.
+            for skill_data in skill_list:
+                name = skill_data.get('name', '').strip().lower()
+                if not name: continue
+
+                skill = UserSkill.query.filter_by(user_id=user_id, skill_name=name).first()
+                if skill:
+                    skill.skill_level = skill_data.get('level', skill.skill_level)
+                else:
+                    new_skill = UserSkill(
+                        user_id=user_id,
+                        skill_name=name,
+                        skill_level=skill_data.get('level', 'intermediate')
+                    )
+                    db.session.add(new_skill)
+            
             db.session.commit()
-            return skill, None
+            return True, None
         except Exception as e:
             db.session.rollback()
-            return None, str(e)
-    
-    @staticmethod
-    def get_user_skills(user_id):
-        """Get all skills for a user"""
-        skills = UserSkill.query.filter_by(user_id=user_id).all()
-        return [skill.to_dict() for skill in skills]
-    
+            return False, str(e)
+
     @staticmethod
     def calculate_completeness(profile):
-        """Calculate profile completeness percentage"""
-        completeness = 0
+        """
+        More granular completeness score including skill count.
+        """
+        score = 0
+        fields = ['education_level', 'branch', 'experience_years', 'preferred_domains']
         
-        if profile.education_level:
-            completeness += 25
-        if profile.branch:
-            completeness += 25
-        if profile.experience_years > 0:
-            completeness += 25
-        if profile.preferred_domains:
-            completeness += 25
+        # Check basic fields (15% each = 60%)
+        for field in fields:
+            if getattr(profile, field):
+                score += 15
         
-        profile.profile_completeness = completeness
-        return completeness
-    
-    @staticmethod
-    def get_profile(user_id):
-        """Get user profile"""
-        return UserProfile.query.filter_by(user_id=user_id).first()
+        # Check skills (40% if user has at least 5 skills)
+        skill_count = UserSkill.query.filter_by(user_id=profile.user_id).count()
+        score += min(40, skill_count * 8) 
+        
+        profile.profile_completeness = min(100, score)
+        return profile.profile_completeness

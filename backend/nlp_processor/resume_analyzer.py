@@ -1,17 +1,18 @@
 """
-NLP-based Resume Analyzer for Cognitive Career Recommendation System
-Handles resume parsing, skill extraction, and interest analysis using NLP techniques
+Advanced NLP-based Resume Analyzer for Cognitive Career Recommendation System
 """
 
 import pandas as pd
 import numpy as np
 import re
-from datetime import datetime
+from datetime import datetime, timezone
 from collections import Counter
 import PyPDF2
 from docx import Document
+import json
+from typing import Dict, List, Any, Tuple, Optional
 
-# Optional NLP/ML imports - may not be available in production
+# Dependency Management
 try:
     import spacy
     SPACY_AVAILABLE = True
@@ -25,595 +26,153 @@ except ImportError:
     TEXTBLOB_AVAILABLE = False
 
 try:
-    from sklearn.feature_extraction.text import TfidfVectorizer
-    SKLEARN_AVAILABLE = True
-except ImportError:
-    SKLEARN_AVAILABLE = False
-
-try:
     import nltk
     from nltk.corpus import stopwords
     from nltk.tokenize import word_tokenize, sent_tokenize
     NLTK_AVAILABLE = True
 except ImportError:
     NLTK_AVAILABLE = False
-    stopwords = None
-    word_tokenize = None
-    sent_tokenize = None
-
-from typing import Dict, List, Any, Tuple, Optional
-import json
 
 class ResumeAnalyzer:
     """
-    Advanced NLP Resume Analyzer using spaCy and other NLP libraries
-    Extracts skills, experience, education, and interests from resume documents
+    Advanced NLP Resume Analyzer using spaCy and other NLP libraries.
+    Extracts skills, experience, education, and interests from documents.
     """
     
     def __init__(self):
-        # Load spaCy model
+        # 1. Initialize spaCy
+        self.nlp = None
         if SPACY_AVAILABLE:
             try:
                 self.nlp = spacy.load("en_core_web_sm")
             except OSError:
-                print("spaCy model not found. Please install with: python -m spacy download en_core_web_sm")
                 self.nlp = None
-        else:
-            self.nlp = None
         
-        # Download NLTK data if needed
+        # 2. Initialize NLTK
+        self.stop_words = set()
         if NLTK_AVAILABLE:
             try:
-                nltk.data.find('tokenizers/punkt')
-                nltk.data.find('corpora/stopwords')
-            except LookupError:
-                try:
-                    import sys
-                    print("Downloading required NLTK data...")
-                    nltk.download('punkt', quiet=True)
-                    nltk.download('stopwords', quiet=True)
-                except Exception as e:
-                    import logging
-                    logger = logging.getLogger(__name__)
-                    logger.error(f"Failed to download NLTK data: {e}. Some NLP features may be limited.")
-            
-            try:
+                nltk.download('punkt', quiet=True)
+                nltk.download('stopwords', quiet=True)
                 self.stop_words = set(stopwords.words('english'))
-            except Exception as e:
-                import logging
-                logger = logging.getLogger(__name__)
-                logger.warning(f"Could not load stopwords: {e}")
-                self.stop_words = set()
-        else:
-            self.stop_words = set()
+            except Exception:
+                pass
         
-        # Load skill taxonomies and patterns
+        # 3. Load Taxonomies
         self._load_skill_patterns()
         self._load_education_patterns()
         self._load_experience_patterns()
     
     def _load_skill_patterns(self):
-        """Load predefined skill patterns and taxonomies"""
         self.technical_skills = {
-            'programming_languages': [
-                'python', 'java', 'javascript', 'c++', 'c#', 'ruby', 'php', 'swift',
-                'kotlin', 'go', 'rust', 'scala', 'r', 'matlab', 'sql', 'html', 'css'
-            ],
-            'frameworks_libraries': [
-                'react', 'angular', 'vue', 'django', 'flask', 'spring', 'node.js',
-                'tensorflow', 'pytorch', 'scikit-learn', 'pandas', 'numpy', 'express'
-            ],
-            'databases': [
-                'mysql', 'postgresql', 'mongodb', 'redis', 'elasticsearch', 'cassandra',
-                'oracle', 'sqlite', 'dynamodb', 'neo4j'
-            ],
-            'cloud_platforms': [
-                'aws', 'azure', 'google cloud', 'heroku', 'digitalocean', 'docker',
-                'kubernetes', 'terraform'
-            ],
-            'data_science': [
-                'machine learning', 'deep learning', 'data analysis', 'statistics',
-                'data visualization', 'big data', 'nlp', 'computer vision'
-            ],
-            'tools_software': [
-                'git', 'jenkins', 'jira', 'confluence', 'slack', 'figma', 'photoshop',
-                'illustrator', 'tableau', 'power bi', 'excel'
-            ]
+            'programming_languages': ['python', 'java', 'javascript', 'c++', 'c#', 'ruby', 'php', 'swift', 'kotlin', 'go', 'rust', 'sql'],
+            'frameworks': ['react', 'angular', 'vue', 'django', 'flask', 'spring boot', 'node.js', 'tensorflow', 'pytorch'],
+            'cloud_devops': ['aws', 'azure', 'google cloud', 'docker', 'kubernetes', 'terraform', 'jenkins', 'ci/cd'],
+            'data': ['machine learning', 'deep learning', 'data analysis', 'nlp', 'tableau', 'power bi', 'excel']
         }
+        self.soft_skills = ['leadership', 'communication', 'teamwork', 'problem solving', 'agile', 'project management']
         
-        self.soft_skills = [
-            'leadership', 'communication', 'teamwork', 'problem solving',
-            'critical thinking', 'project management', 'time management',
-            'adaptability', 'creativity', 'analytical thinking'
-        ]
-
-        # Build lookup for normalization
+        # Canonical Lookup
         self.skill_lookup = {}
-        for skills in self.technical_skills.values():
-            for skill in skills:
-                self.skill_lookup[skill.lower()] = skill
-        for skill in self.soft_skills:
-            self.skill_lookup[skill.lower()] = skill
-    
+        for category in self.technical_skills.values():
+            for s in category: self.skill_lookup[s.lower()] = s
+        for s in self.soft_skills: self.skill_lookup[s.lower()] = s
+
     def _load_education_patterns(self):
-        """Load education-related patterns"""
-        self.degree_patterns = [
-            r'bachelor.*?of.*?science', r'b\.?s\.?', r'bachelor.*?degree',
-            r'master.*?of.*?science', r'm\.?s\.?', r'master.*?degree',
-            r'ph\.?d\.?', r'doctorate', r'phd', r'master.*?of.*?arts', r'm\.?a\.?',
-            r'bachelor.*?of.*?arts', r'b\.?a\.?', r'associate.*?degree'
-        ]
-        
-        self.field_patterns = [
-            'computer science', 'information technology', 'engineering',
-            'mathematics', 'statistics', 'business administration',
-            'marketing', 'finance', 'economics', 'psychology', 'design'
-        ]
-    
+        self.degree_patterns = [r'bachelor', r'master', r'ph\.?d', r'b\.?s\.?', r'm\.?s\.?']
+        self.field_patterns = ['computer science', 'engineering', 'business', 'data science', 'mathematics']
+
     def _load_experience_patterns(self):
-        """Load experience and job title patterns"""
-        self.job_title_patterns = [
-            'software engineer', 'data scientist', 'product manager', 'designer',
-            'analyst', 'developer', 'consultant', 'manager', 'director',
-            'architect', 'specialist', 'coordinator', 'lead', 'senior'
-        ]
-        
-        self.experience_patterns = [
-            r'(\d+)\s*years?\s*of\s*experience',
-            r'(\d+)\+\s*years?',
-            r'experience.*?(\d+)\s*years?',
-            r'(\d+)\s*years?\s*in'
-        ]
-    
+        self.job_title_patterns = ['engineer', 'scientist', 'manager', 'developer', 'analyst', 'lead', 'senior']
+
     def extract_information(self, file) -> Dict[str, Any]:
-        """
-        Main method to extract all information from resume
-        
-        Args:
-            file: Uploaded file object (PDF, DOC, DOCX, or TXT)
-            
-        Returns:
-            Dictionary containing extracted resume information
-        """
-        # Extract text from file
+        """Main entry point for file processing"""
         text = self._extract_text_from_file(file)
-        
         if not text:
             return {'error': 'Could not extract text from file'}
         
-        # Apply NLP processing
-        resume_data = {
-            'raw_text': text,
+        return {
             'personal_info': self._extract_personal_info(text),
             'skills': self._extract_skills(text),
             'experience': self._extract_experience(text),
             'education': self._extract_education(text),
             'interests': self._extract_interests(text),
-            'summary': self._generate_profile_summary(text),
-            'nlp_analysis': self._perform_nlp_analysis(text)
+            'summary_stats': self._generate_profile_summary(text),
+            'nlp_analysis': self._perform_nlp_analysis(text) if self.nlp else "NLP Model Unavailable"
         }
-        
-        return resume_data
-    
+
     def _extract_text_from_file(self, file) -> str:
-        """Extract text content from different file formats"""
-        filename = (file.filename or '').lower()
-        
+        filename = getattr(file, 'filename', '').lower()
         try:
             if filename.endswith('.pdf'):
-                return self._extract_from_pdf(file)
+                reader = PyPDF2.PdfReader(file)
+                return " ".join([page.extract_text() or '' for page in reader.pages])
             elif filename.endswith('.docx'):
-                return self._extract_from_docx(file)
-            elif filename.endswith('.doc'):
-                return self._extract_from_doc(file)
-            elif filename.endswith('.txt'):
+                doc = Document(file)
+                return "\n".join([p.text for p in doc.paragraphs])
+            else:
                 content = file.read()
-                if isinstance(content, bytes):
-                    return content.decode('utf-8', errors='ignore')
-                return str(content)
-            else:
-                return ''
+                return content.decode('utf-8', errors='ignore') if isinstance(content, bytes) else str(content)
         except Exception as e:
-            print(f"Error extracting text: {str(e)}")
-            return ''
-    
-    def _extract_from_pdf(self, file) -> str:
-        """Extract text from PDF file"""
-        try:
-            pdf_reader = PyPDF2.PdfReader(file)
-            text = ''
-            for page in pdf_reader.pages:
-                extracted = page.extract_text() or ''
-                text += extracted
-            return text
-        except Exception:
-            return ''
-    
-    def _extract_from_docx(self, file) -> str:
-        """Extract text from DOCX file"""
-        try:
-            doc = Document(file)
-            text = ''
-            for paragraph in doc.paragraphs:
-                text += paragraph.text + '\n'
-            return text
-        except Exception:
-            return ''
-    
-    def _extract_from_doc(self, file) -> str:
-        """Extract text from DOC file (simplified)"""
-        try:
-            content = file.read()
-            if isinstance(content, bytes):
-                text = content.decode('utf-8', errors='ignore')
-                if not text.strip():
-                    text = content.decode('latin-1', errors='ignore')
-                return text
-            return str(content)
-        except Exception:
-            return ''
-    
+            return f"Error: {str(e)}"
+
     def _extract_personal_info(self, text: str) -> Dict[str, str]:
-        """Extract personal information like name, email, phone"""
-        personal_info = {}
-        
-        # Email extraction
-        email_pattern = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
-        emails = re.findall(email_pattern, text)
-        personal_info['email'] = emails[0] if emails else ''
-        
-        # Phone number extraction
-        phone_pattern = r'(\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}'
-        phones = re.findall(phone_pattern, text)
-        personal_info['phone'] = ''.join(phones[0]) if phones else ''
-        
-        # Name extraction (first line often contains name)
-        lines = text.split('\n')
-        potential_name = lines[0].strip() if lines else ''
-        if len(potential_name.split()) <= 3 and not '@' in potential_name:
-            personal_info['name'] = potential_name
-        else:
-            personal_info['name'] = ''
-        
-        # LinkedIn URL
-        linkedin_pattern = r'linkedin\.com/in/[A-Za-z0-9-]+'
-        linkedin_matches = re.findall(linkedin_pattern, text)
-        personal_info['linkedin'] = linkedin_matches[0] if linkedin_matches else ''
-        
-        return personal_info
-    
+        email = re.findall(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b', text)
+        phone = re.findall(r'(\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}', text)
+        return {
+            'email': email[0] if email else '',
+            'phone': phone[0] if phone else '',
+            'linkedin': re.search(r'linkedin\.com/in/[A-Za-z0-9-]+', text).group(0) if re.search(r'linkedin\.com/in/[A-Za-z0-9-]+', text) else ''
+        }
+
     def _extract_skills(self, text: str) -> Dict[str, List[str]]:
-        """Extract technical and soft skills from resume text"""
-        text_lower = text.lower()
-        extracted_skills = {
-            'technical_skills': [],
-            'soft_skills': [],
-            'skill_confidence': {}
-        }
-
-        section_skills = self._extract_skills_from_sections(text)
+        text_l = text.lower()
+        results = {'technical': [], 'soft': [], 'confidence': {}}
         
-        # Extract technical skills
-        for category, skills_list in self.technical_skills.items():
-            found_skills = []
-            for skill in skills_list:
-                pattern = r'\b' + re.escape(skill.lower()) + r'\b'
-                if re.search(pattern, text_lower):
-                    found_skills.append(skill)
-                    # Calculate confidence based on frequency
-                    count = len(re.findall(pattern, text_lower))
-                    extracted_skills['skill_confidence'][skill] = min(1.0, count * 0.2)
-            
-            if found_skills:
-                extracted_skills['technical_skills'].extend(found_skills)
+        for cat, skills in self.technical_skills.items():
+            for s in skills:
+                if re.search(r'\b' + re.escape(s) + r'\b', text_l):
+                    results['technical'].append(s)
+                    results['confidence'][s] = min(1.0, len(re.findall(re.escape(s), text_l)) * 0.2)
         
-        # Extract soft skills
-        for skill in self.soft_skills:
-            pattern = r'\b' + re.escape(skill.lower()) + r'\b'
-            if re.search(pattern, text_lower):
-                extracted_skills['soft_skills'].append(skill)
-
-        # Merge section skills into technical list when possible
-        for skill in section_skills:
-            normalized = skill.lower()
-            canonical = self.skill_lookup.get(normalized, skill)
-            if canonical.lower() in [s.lower() for s in self.soft_skills]:
-                extracted_skills['soft_skills'].append(canonical)
-            else:
-                extracted_skills['technical_skills'].append(canonical)
+        for s in self.soft_skills:
+            if re.search(r'\b' + re.escape(s) + r'\b', text_l):
+                results['soft'].append(s)
         
-        # Remove duplicates
-        extracted_skills['technical_skills'] = list(set(extracted_skills['technical_skills']))
-        extracted_skills['soft_skills'] = list(set(extracted_skills['soft_skills']))
-        
-        return extracted_skills
+        return results
 
-    def _extract_skills_from_sections(self, text: str) -> List[str]:
-        headings = {'skills', 'technical skills', 'technologies', 'tools', 'expertise', 'competencies'}
-        lines = [line.strip() for line in text.split('\n') if line.strip()]
-        collected = []
-
-        i = 0
-        while i < len(lines):
-            line = lines[i].lower().strip(':')
-            if line in headings:
-                i += 1
-                while i < len(lines):
-                    next_line = lines[i].strip()
-                    lower_next = next_line.lower().strip(':')
-                    if lower_next in headings:
-                        break
-                    if len(next_line) < 3:
-                        i += 1
-                        continue
-                    parts = re.split(r'[•|,;/]+', next_line)
-                    for part in parts:
-                        cleaned = part.strip()
-                        if cleaned:
-                            collected.append(cleaned)
-                    i += 1
-                continue
-            i += 1
-
-        return collected
-    
     def _extract_experience(self, text: str) -> List[Dict[str, Any]]:
-        """Extract work experience information"""
-        experience_list = []
+        current_year = datetime.now(timezone.utc).year
+        ranges = re.findall(r'((?:19|20)\d{2})\s*[-–]\s*((?:19|20)\d{2}|present|current)', text.lower())
+        total = sum([max(1, (current_year if r[1] in ('present', 'current') else int(r[1])) - int(r[0])) for r in ranges])
         
-        # Extract years of experience
-        total_years = 0
-        for pattern in self.experience_patterns:
-            matches = re.findall(pattern, text.lower())
-            if matches:
-                years = [int(match) for match in matches if match.isdigit()]
-                if years:
-                    total_years = max(years)
+        return [{
+            'total_years': total,
+            'titles': [t for t in self.job_title_patterns if t in text.lower()]
+        }]
 
-        # Estimate experience from date ranges
-        total_years = max(total_years, self._estimate_years_from_dates(text))
-        
-        # Extract job titles
-        job_titles = []
-        text_lower = text.lower()
-        for title in self.job_title_patterns:
-            if title in text_lower:
-                job_titles.append(title.title())
-        
-        # Create experience entries (simplified)
-        if job_titles or total_years > 0:
-            experience_list.append({
-                'total_years': total_years,
-                'job_titles': job_titles,
-                'extracted_companies': self._extract_companies(text),
-                'roles_identified': len(job_titles)
-            })
-        
-        return experience_list
-
-    def _estimate_years_from_dates(self, text: str) -> int:
-        current_year = datetime.utcnow().year
-        year_ranges = re.findall(r'((?:19|20)\d{2})\s*[-–]\s*((?:19|20)\d{2}|present|current)', text.lower())
-        total = 0
-        for start_str, end_str in year_ranges:
-            start = int(start_str)
-            end = current_year if end_str in ('present', 'current') else int(end_str)
-            if end >= start:
-                total += max(1, end - start)
-        return total
-    
-    def _extract_companies(self, text: str) -> List[str]:
-        """Extract company names (basic implementation)"""
-        # This is a simplified approach - in practice, you'd use Named Entity Recognition
-        lines = text.split('\n')
-        potential_companies = []
-        
-        for line in lines:
-            # Look for lines that might contain company names
-            if any(keyword in line.lower() for keyword in ['inc', 'corp', 'llc', 'ltd', 'company']):
-                potential_companies.append(line.strip())
-        
-        return potential_companies[:5]  # Return top 5 matches
-    
-    def _extract_education(self, text: str) -> Dict[str, Any]:
-        """Extract education information"""
-        education_info = {
-            'degrees': [],
-            'institutions': [],
-            'fields_of_study': [],
-            'graduation_years': []
+    def _perform_nlp_analysis(self, text: str) -> Dict[str, Any]:
+        if not self.nlp: return {}
+        doc = self.nlp(text[:100000]) # Safety cap
+        return {
+            'entities': {ent.label_: ent.text for ent in doc.ents},
+            'noun_chunks': [chunk.text for chunk in list(doc.noun_chunks)[:15]]
         }
-        
-        text_lower = text.lower()
-        
-        # Extract degrees
-        for pattern in self.degree_patterns:
-            matches = re.findall(pattern, text_lower)
-            education_info['degrees'].extend(matches)
-        
-        # Extract fields of study
-        for field in self.field_patterns:
-            if field in text_lower:
-                education_info['fields_of_study'].append(field)
-        
-        # Extract graduation years
-        year_pattern = r'(?:19|20)\d{2}'
-        years = re.findall(year_pattern, text)
-        education_info['graduation_years'] = [year for year in years if int(year) > 1990]
-        
-        # Clean up and remove duplicates
-        education_info['degrees'] = list(set(education_info['degrees']))
-        education_info['fields_of_study'] = list(set(education_info['fields_of_study']))
-        
-        return education_info
-    
-    def _extract_interests(self, text: str) -> List[str]:
-        """Extract interests and hobbies"""
-        interest_keywords = [
-            'machine learning', 'artificial intelligence', 'data science',
-            'web development', 'mobile development', 'gaming', 'photography',
-            'travel', 'sports', 'music', 'reading', 'writing', 'design',
-            'entrepreneurship', 'blockchain', 'cybersecurity', 'cloud computing'
-        ]
-        
-        found_interests = []
-        text_lower = text.lower()
-        
-        for interest in interest_keywords:
-            if interest in text_lower:
-                found_interests.append(interest)
-        
-        return found_interests
-    
+
     def _generate_profile_summary(self, text: str) -> Dict[str, Any]:
-        """Generate a summary of the resume profile"""
-        # Word count and basic statistics with safe fallbacks
-        try:
-            if NLTK_AVAILABLE and word_tokenize and sent_tokenize:
-                words = word_tokenize(text)
-                sentences = sent_tokenize(text)
-            else:
-                raise ValueError('NLTK tokenizers unavailable')
-        except Exception:
-            words = re.findall(r'\b\w+\b', text)
-            sentences = [s for s in re.split(r'[.!?]+', text) if s.strip()]
-
-        avg_words_per_sentence = len(words) / max(1, len(sentences))
-
-        noun_phrases = []
-        sentiment_polarity = 0.0
-        sentiment_subjectivity = 0.0
-
-        if TEXTBLOB_AVAILABLE:
-            try:
-                blob = TextBlob(text)
-                noun_phrases = [str(phrase) for phrase in blob.noun_phrases[:10]]
-                sentiment_polarity = blob.sentiment.polarity
-                sentiment_subjectivity = blob.sentiment.subjectivity
-            except Exception:
-                pass
-
+        words = re.findall(r'\w+', text)
         return {
             'word_count': len(words),
-            'sentence_count': len(sentences),
-            'avg_words_per_sentence': round(avg_words_per_sentence, 2),
-            'key_phrases': noun_phrases,
-            'sentiment_polarity': sentiment_polarity,
-            'sentiment_subjectivity': sentiment_subjectivity
+            'sentiment': TextBlob(text).sentiment.polarity if TEXTBLOB_AVAILABLE else 0.0
         }
-    
-    def _perform_nlp_analysis(self, text: str) -> Dict[str, Any]:
-        """Perform advanced NLP analysis using spaCy"""
-        if not self.nlp:
-            return {'error': 'spaCy model not available'}
-        
-        # Process text with spaCy
-        doc = self.nlp(text[:1000000])  # Limit text length for processing
-        
-        # Extract entities
-        entities = {}
-        for ent in doc.ents:
-            entity_type = ent.label_
-            if entity_type not in entities:
-                entities[entity_type] = []
-            entities[entity_type].append(ent.text)
-        
-        # Extract important tokens
-        important_tokens = []
-        for token in doc:
-            if (token.pos_ in ['NOUN', 'PROPN', 'ADJ'] and 
-                not token.is_stop and 
-                not token.is_punct and 
-                len(token.text) > 2):
-                important_tokens.append({
-                    'text': token.text,
-                    'pos': token.pos_,
-                    'lemma': token.lemma_
-                })
-        
-        # Extract noun chunks
-        noun_chunks = [chunk.text for chunk in doc.noun_chunks]
-        
-        analysis = {
-            'entities': entities,
-            'important_tokens': important_tokens[:50],  # Top 50 tokens
-            'noun_chunks': noun_chunks[:20],  # Top 20 noun chunks
-            'language_detected': doc.lang_,
-            'token_count': len(doc)
+
+    def _extract_education(self, text: str) -> Dict[str, List[str]]:
+        text_l = text.lower()
+        return {
+            'degrees': list(set(re.findall(r'|'.join(self.degree_patterns), text_l))),
+            'fields': [f for f in self.field_patterns if f in text_l]
         }
-        
-        return analysis
-    
-    def analyze_skill_gaps(self, user_skills: List[str], target_role: str) -> Dict[str, List[str]]:
-        """
-        Analyze skill gaps for a target role
-        
-        Args:
-            user_skills: List of user's current skills
-            target_role: Target job role
-            
-        Returns:
-            Dictionary containing skill gap analysis
-        """
-        role_requirements = {
-            'data scientist': [
-                'python', 'r', 'sql', 'machine learning', 'statistics',
-                'pandas', 'numpy', 'scikit-learn', 'tableau', 'aws'
-            ],
-            'software engineer': [
-                'programming', 'algorithms', 'data structures', 'git',
-                'testing', 'debugging', 'database design', 'api development'
-            ],
-            'product manager': [
-                'product strategy', 'market research', 'analytics',
-                'project management', 'stakeholder management', 'agile'
-            ]
-        }
-        
-        required_skills = role_requirements.get(target_role.lower(), [])
-        user_skills_lower = [skill.lower() for skill in user_skills]
-        
-        skill_gaps = {
-            'missing_skills': [skill for skill in required_skills if skill not in user_skills_lower],
-            'matching_skills': [skill for skill in required_skills if skill in user_skills_lower],
-            'additional_skills': [skill for skill in user_skills_lower if skill not in required_skills],
-            'match_percentage': len([skill for skill in required_skills if skill in user_skills_lower]) / max(1, len(required_skills)) * 100
-        }
-        
-        return skill_gaps
-    
-    def get_skill_recommendations(self, current_skills: List[str], target_domain: str) -> List[str]:
-        """
-        Recommend skills to learn based on current skills and target domain
-        
-        Args:
-            current_skills: User's current skills
-            target_domain: Target career domain
-            
-        Returns:
-            List of recommended skills to learn
-        """
-        domain_skills = {
-            'data_science': [
-                'machine learning', 'deep learning', 'python', 'r', 'sql',
-                'tableau', 'power bi', 'aws', 'spark', 'hadoop'
-            ],
-            'web_development': [
-                'javascript', 'react', 'node.js', 'html', 'css',
-                'mongodb', 'express', 'git', 'docker', 'aws'
-            ],
-            'mobile_development': [
-                'swift', 'kotlin', 'react native', 'flutter',
-                'firebase', 'android studio', 'xcode', 'git'
-            ]
-        }
-        
-        target_skills = domain_skills.get(target_domain, [])
-        current_skills_lower = [skill.lower() for skill in current_skills]
-        
-        recommendations = [
-            skill for skill in target_skills 
-            if skill not in current_skills_lower
-        ]
-        
-        return recommendations[:10]  # Top 10 recommendations
+
+    def _extract_interests(self, text: str) -> List[str]:
+        keywords = ['ai', 'blockchain', 'gaming', 'photography', 'travel', 'open source']
+        return [k for k in keywords if k in text.lower()]

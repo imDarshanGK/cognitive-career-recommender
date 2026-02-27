@@ -1,5 +1,5 @@
 from . import db
-from datetime import datetime
+from datetime import datetime, timezone
 
 class UserProfile(db.Model):
     __tablename__ = 'user_profiles'
@@ -12,24 +12,34 @@ class UserProfile(db.Model):
     branch = db.Column(db.String(255))  # CSE, Mechanical, etc.
     experience_years = db.Column(db.Float, default=0)
     
-    # Interests (comma-separated or JSON array)
-    preferred_domains = db.Column(db.Text)  # AI, Web, Data Science, Cloud, etc.
+    # Interests
+    preferred_domains = db.Column(db.Text)  # Comma-separated: AI, Web, Cloud
     
     # Profile completeness
     profile_completeness = db.Column(db.Float, default=0)
     
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    # Timestamps using timezone-aware UTC
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    
+    # Relationship for easy access
+    # Assumes User model has a relationship back to this
     
     def to_dict(self):
+        # Helper to convert comma-separated string to list
+        domains = []
+        if self.preferred_domains:
+            domains = [d.strip() for d in self.preferred_domains.split(',') if d.strip()]
+
         return {
             'id': self.id,
             'user_id': self.user_id,
             'education_level': self.education_level,
             'branch': self.branch,
             'experience_years': self.experience_years,
-            'preferred_domains': self.preferred_domains,
-            'profile_completeness': self.profile_completeness
+            'preferred_domains': domains,
+            'profile_completeness': self.profile_completeness,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None
         }
 
 
@@ -42,6 +52,7 @@ class UserSkill(db.Model):
     skill_level = db.Column(db.String(50), default='intermediate')  # beginner, intermediate, expert
     years_experience = db.Column(db.Float, default=0)
     
+    # Prevent duplicate skills for the same user
     __table_args__ = (db.UniqueConstraint('user_id', 'skill_name', name='uq_user_skill'),)
     
     def to_dict(self):

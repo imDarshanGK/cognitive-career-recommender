@@ -3,7 +3,7 @@ Simplified NLP-based Resume Analyzer for Cognitive Career Recommendation System
 """
 
 import re
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, List, Any, Optional
 
 class SimpleResumeAnalyzer:
@@ -54,32 +54,26 @@ class SimpleResumeAnalyzer:
             'fields': ['computer science', 'engineering', 'business', 'mathematics', 'science', 'arts']
         }
     
-    def extract_information(self, file):
+    def extract_information(self, file_content: Any):
         """
-        Extract information from uploaded resume file
-        
-        Args:
-            file: Uploaded file object
-            
-        Returns:
-            Dict containing extracted resume information
+        Extract information from resume text or file object
         """
         try:
-            # Read file content
-            if hasattr(file, 'read'):
-                content = file.read()
+            # Handle both file objects and raw strings
+            if hasattr(file_content, 'read'):
+                content = file_content.read()
                 if isinstance(content, bytes):
                     content = content.decode('utf-8', errors='ignore')
             else:
-                content = str(file)
+                content = str(file_content)
             
-            # Extract information
             extracted_data = {
                 'skills': self._extract_skills(content),
                 'education': self._extract_education(content),
                 'experience': self._extract_experience(content),
                 'contact_info': self._extract_contact_info(content),
-                'summary': self._extract_summary(content)
+                'summary': self._extract_summary(content),
+                'raw_text_preview': content[:1000] # Safe preview
             }
             
             return {
@@ -96,22 +90,23 @@ class SimpleResumeAnalyzer:
             }
     
     def _extract_skills(self, text: str) -> List[str]:
-        """Extract skills from resume text using word boundary matching"""
+        """Extract skills using both section-based and global pattern matching"""
         text_lower = text.lower()
         found_skills = []
 
+        # 1. Try to find skills in specific sections first
         found_skills.extend(self._extract_skills_from_sections(text))
         
+        # 2. Pattern match against the entire text
         for category, skills in self.skill_patterns.items():
             for skill in skills:
-                # Use word boundaries to ensure exact skill matching
-                # Convert skill to regex pattern with word boundaries
-                import re as regex_module
-                pattern = r'\b' + regex_module.escape(skill) + r'\b'
-                if regex_module.search(pattern, text_lower):
+                # \b ensures we don't match 'Java' inside 'Javascript'
+                pattern = r'\b' + re.escape(skill) + r'\b'
+                if re.search(pattern, text_lower):
                     found_skills.append(skill.title())
         
-        return list(set(found_skills))  # Remove duplicates
+        # Cleanup: Remove duplicates and normalize
+        return list(set([s.strip().title() for s in found_skills if s.strip()]))
 
     def _extract_skills_from_sections(self, text: str) -> List[str]:
         headings = {'skills', 'technical skills', 'technologies', 'tools', 'expertise', 'competencies'}
@@ -120,159 +115,110 @@ class SimpleResumeAnalyzer:
 
         i = 0
         while i < len(lines):
-            line = lines[i].lower().strip(':')
-            if line in headings:
+            line_clean = lines[i].lower().strip(':- ')
+            if line_clean in headings:
                 i += 1
                 while i < len(lines):
                     next_line = lines[i].strip()
-                    lower_next = next_line.lower().strip(':')
-                    if lower_next in headings:
+                    # If we hit another heading, stop
+                    if next_line.lower().strip(':- ') in headings:
                         break
+                    
+                    # Split by common delimiters
                     parts = re.split(r'[•|,;/]+', next_line)
                     for part in parts:
                         cleaned = part.strip()
-                        if cleaned:
+                        if cleaned and len(cleaned) < 30: # Avoid capturing long sentences
                             collected.append(cleaned)
                     i += 1
                 continue
             i += 1
-
         return collected
     
     def _extract_education(self, text: str) -> Dict[str, Any]:
-        """Extract education information from resume text"""
         text_lower = text.lower()
+        education_info = {'degree': None, 'field': None, 'year': None}
         
-        education_info = {
-            'degree': None,
-            'field': None,
-            'institution': None,
-            'year': None
-        }
-        
-        # Find degree types
         for degree in self.education_patterns['degree_types']:
             if degree in text_lower:
                 education_info['degree'] = degree.title()
                 break
         
-        # Find fields of study
         for field in self.education_patterns['fields']:
             if field in text_lower:
                 education_info['field'] = field.title()
                 break
         
-        # Extract year (basic regex for 4-digit years)
-        year_pattern = r'20\d{2}|19\d{2}'
-        years = re.findall(year_pattern, text)
+        years = re.findall(r'20\d{2}|19\d{2}', text)
         if years:
-            education_info['year'] = years[-1]  # Take the most recent year
+            education_info['year'] = years[-1] 
         
         return education_info
     
     def _extract_experience(self, text: str) -> List[Dict[str, Any]]:
-        """Extract work experience from resume text"""
-        # This is a simplified version - in reality would be much more complex
         experience_keywords = ['experience', 'work', 'employment', 'position', 'role']
-        
         experiences = []
-        
-        # Look for experience sections
         total_years = self._estimate_years_from_dates(text)
 
         if any(keyword in text.lower() for keyword in experience_keywords):
             experiences.append({
                 'position': 'Professional Experience Found',
-                'company': 'Various Companies',
-                'duration': f'{total_years} years' if total_years else 'Multiple Years',
-                'description': 'Professional experience detected in resume',
-                'years': total_years
+                'years': total_years,
+                'duration_desc': f'{total_years} years' if total_years > 0 else 'Recent Experience'
             })
-        
         return experiences
 
-    def _estimate_years_from_dates(self, text: str) -> int:
-        current_year = datetime.utcnow().year
-        year_ranges = re.findall(r'((?:19|20)\d{2})\s*[-–]\s*((?:19|20)\d{2}|present|current)', text.lower())
-        total = 0
+    def _estimate_years_from_dates(self, text: str) -> float:
+        current_year = datetime.now(timezone.utc).year
+        # Matches 2018-2022 or 2019 - Present
+        year_ranges = re.findall(r'((?:19|20)\d{2})\s*[-–]\s*((?:19|20)\d{2}|present|current|now)', text.lower())
+        
+        total = 0.0
         for start_str, end_str in year_ranges:
-            start = int(start_str)
-            end = current_year if end_str in ('present', 'current') else int(end_str)
-            if end >= start:
-                total += max(1, end - start)
+            try:
+                start = int(start_str)
+                end = current_year if end_str in ('present', 'current', 'now') else int(end_str)
+                if end >= start:
+                    total += max(0.5, float(end - start))
+            except ValueError:
+                continue
         return total
     
     def _extract_contact_info(self, text: str) -> Dict[str, Any]:
-        """Extract contact information from resume text"""
-        contact_info = {
-            'email': None,
-            'phone': None,
-            'linkedin': None
-        }
+        contact_info = {'email': None, 'phone': None}
         
-        # Extract email
-        email_pattern = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
-        emails = re.findall(email_pattern, text)
-        if emails:
-            contact_info['email'] = emails[0]
+        email_match = re.search(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b', text)
+        if email_match:
+            contact_info['email'] = email_match.group(0)
         
-        # Extract phone number (basic pattern)
-        phone_pattern = r'[\+]?[1-9]?[0-9]{7,12}'
-        phones = re.findall(phone_pattern, text)
-        if phones:
-            contact_info['phone'] = phones[0]
-        
-        # Check for LinkedIn
-        if 'linkedin' in text.lower():
-            contact_info['linkedin'] = 'LinkedIn profile found'
-        
+        phone_match = re.search(r'[\+]?[(]?[0-9]{3}[)]?[-\s\.]?[0-9]{3}[-\s\.]?[0-9]{4,6}', text)
+        if phone_match:
+            contact_info['phone'] = phone_match.group(0)
+            
         return contact_info
     
     def _extract_summary(self, text: str) -> str:
-        """Extract or create a summary of the resume"""
-        # Get first few sentences as summary
-        sentences = text.split('.')[:3]
-        summary = '. '.join(sentences).strip()
+        # Take the first non-empty line as a candidate for a summary/title
+        lines = [l.strip() for l in text.split('\n') if l.strip()]
+        if not lines:
+            return "No text content found."
         
-        if len(summary) > 500:
-            summary = summary[:500] + '...'
-        
-        return summary or "Professional resume with relevant experience and skills."
+        summary = lines[0]
+        if len(summary) > 200:
+            summary = summary[:197] + "..."
+        return summary
 
     def analyze_skills_gap(self, user_skills: List[str], job_requirements: List[str]) -> Dict[str, Any]:
-        """
-        Analyze skills gap between user skills and job requirements
+        u_skills = set(s.lower() for s in user_skills)
+        j_reqs = set(s.lower() for s in job_requirements)
         
-        Args:
-            user_skills: List of user's current skills
-            job_requirements: List of required skills for target job
-            
-        Returns:
-            Skills gap analysis
-        """
-        user_skills_lower = [skill.lower() for skill in user_skills]
-        job_requirements_lower = [skill.lower() for skill in job_requirements]
+        matched = list(u_skills.intersection(j_reqs))
+        missing = list(j_reqs.difference(u_skills))
         
-        matching_skills = [skill for skill in job_requirements_lower if skill in user_skills_lower]
-        missing_skills = [skill for skill in job_requirements_lower if skill not in user_skills_lower]
+        percentage = (len(matched) / len(j_reqs) * 100) if j_reqs else 0
         
         return {
-            'matching_skills': matching_skills,
-            'missing_skills': missing_skills,
-            'match_percentage': len(matching_skills) / len(job_requirements) * 100 if job_requirements else 0,
-            'recommendations': self._generate_skill_recommendations(missing_skills)
+            'matching_skills': [s.title() for s in matched],
+            'missing_skills': [s.title() for s in missing],
+            'match_percentage': round(percentage, 1)
         }
-    
-    def _generate_skill_recommendations(self, missing_skills: List[str]) -> List[str]:
-        """Generate learning recommendations for missing skills"""
-        recommendations = []
-        
-        for skill in missing_skills:
-            if skill in ['python', 'java', 'javascript']:
-                recommendations.append(f"Consider taking an online course in {skill} programming")
-            elif skill in ['machine learning', 'data analysis']:
-                recommendations.append(f"Explore {skill} through online platforms like Coursera or edX")
-            else:
-                recommendations.append(f"Gain experience in {skill} through practice projects")
-        
-        return recommendations

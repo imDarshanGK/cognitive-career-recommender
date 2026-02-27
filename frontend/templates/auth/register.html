@@ -8,96 +8,81 @@
 {% block auth_content %}
 <form method="POST" action="/register" id="registerForm" novalidate>
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    
     <!-- Name Fields -->
     <div class="row mb-3">
         <div class="col-md-6">
             <label for="first_name" class="form-label">
                 <i class="fas fa-user me-1"></i>First Name
             </label>
-            <input type="text" 
-                   class="form-control form-control-lg" 
-                   id="first_name" 
-                   name="first_name" 
-                   placeholder="John"
-                   value="{{ request.form.first_name }}"
-                   required>
+            <input type="text" class="form-control form-control-lg" id="first_name" name="first_name" placeholder="John" value="{{ request.form.first_name }}" required>
             <div class="invalid-feedback" id="first_name-error"></div>
         </div>
         <div class="col-md-6">
             <label for="last_name" class="form-label">
                 <i class="fas fa-user me-1"></i>Last Name
             </label>
-            <input type="text" 
-                   class="form-control form-control-lg" 
-                   id="last_name" 
-                   name="last_name" 
-                   placeholder="Doe"
-                   value="{{ request.form.last_name }}"
-                   required>
+            <input type="text" class="form-control form-control-lg" id="last_name" name="last_name" placeholder="Doe" value="{{ request.form.last_name }}" required>
             <div class="invalid-feedback" id="last_name-error"></div>
         </div>
     </div>
+    <!-- Email Field (GUARANTEED VISIBLE) -->
+    <div class="mb-3">
+        <label for="email" class="form-label">
+            <i class="fas fa-envelope me-1"></i>Email Address
+        </label>
+        <input type="email" class="form-control form-control-lg" id="email" name="email" placeholder="Enter your email" value="{{ request.form.email }}" required>
+        <div class="invalid-feedback" id="email-error"></div>
+    </div>
     
-    <!-- Password Fields -->
-    <div class="mb-3 position-relative">
-        <label for="password" class="form-label">
+    <!-- Password Field (Clean, Single Block) -->
+    <div class="mb-4 position-relative">
+        <label for="password" class="form-label" style="font-size:1.1rem;">
             <i class="fas fa-lock me-1"></i>Password <span class="text-danger">*</span>
         </label>
-        <div class="input-group">
-            <input type="password" 
-                   class="form-control form-control-lg" 
-                   id="password" 
-                   name="password" 
+        <div class="input-group mb-2">
+            <input type="password"
+                   class="form-control form-control-lg"
+                   id="password"
+                   name="password"
                    placeholder="Create a password"
                    required
+                   aria-describedby="passwordHelp"
+                   autocomplete="new-password"
                    data-bs-toggle="tooltip"
                    data-bs-placement="right"
                    title="Password must be at least 8 characters, include uppercase, lowercase, number, and special character."
             >
-            <button type="button" class="btn btn-outline-secondary" id="togglePassword" data-target="password">
+            <button type="button" class="btn btn-outline-secondary" id="togglePassword" data-target="password" tabindex="-1">
                 <i class="fas fa-eye"></i>
             </button>
         </div>
-        <div class="invalid-feedback" id="password-error"></div>
-        <div class="progress mt-2" style="height: 6px;">
-            <div id="passwordStrengthBar" class="progress-bar bg-danger" style="width: 0%;"></div>
-        </div>
-        <small id="passwordStrengthText" class="form-text text-muted"></small>
-        <ul class="list-unstyled mt-2" id="passwordRequirements" style="display:none;">
-            <li id="req-length" class="text-muted"><i class="fas fa-times me-1"></i> At least 8 characters</li>
-            <li id="req-lowercase" class="text-muted"><i class="fas fa-times me-1"></i> One lowercase letter</li>
-            <li id="req-uppercase" class="text-muted"><i class="fas fa-times me-1"></i> One uppercase letter</li>
-            <li id="req-number" class="text-muted"><i class="fas fa-times me-1"></i> One number</li>
-            <li id="req-special" class="text-muted"><i class="fas fa-times me-1"></i> One special character (!@#$%^&amp;*)</li>
-        </ul>
-    </div>
-            <button type="button" class="btn btn-outline-secondary" id="togglePassword" data-target="password">
-                <i class="fas fa-eye"></i>
-            </button>
-        </div>
-        <div class="invalid-feedback" id="password-error"></div>
-        
-        <!-- Password Requirements -->
-        <small class="form-text d-block mt-2 mb-2">Password must have:</small>
-        <div style="font-size: 0.85rem; display: grid; grid-template-columns: 1fr 1fr;">
-            <div id="req-length" style="color: #999;"><i class="fas fa-times-circle me-1"></i>8+ characters</div>
-            <div id="req-upper" style="color: #999;"><i class="fas fa-times-circle me-1"></i>Uppercase letter</div>
-            <div id="req-number" style="color: #999;"><i class="fas fa-times-circle me-1"></i>Number (0-9)</div>
-            <div id="req-special" style="color: #999;"><i class="fas fa-times-circle me-1"></i>Special char (!@#$)</div>
-        </div>
-        
-        <!-- Password Strength Indicator -->
-        <div class="password-strength mt-3">
-            <div class="progress" style="height: 6px;">
-                <div class="progress-bar" id="passwordStrengthBar" role="progressbar" style="width: 0%"></div>
+        <div class="invalid-feedback" id="password-error" style="font-size:1rem;"></div>
+        <div class="rounded bg-light border mb-2 px-2 py-2" style="font-size:0.95rem; margin-top:0.15rem; margin-bottom:0.15rem;">
+            <div id="passwordRequirements" class="mb-2">
+                <div class="mb-1" style="margin-bottom:0.01rem !important;"><strong>Password must have:</strong></div>
+                <div class="password-req-rows mx-auto" style="max-width:480px; font-size:0.95em; margin-bottom:0.01rem;">
+                    <div class="d-flex flex-row align-items-center mb-1" style="gap:0.6rem;">
+                        <span id="req-length" class="d-flex align-items-center text-danger"><i class="fas fa-times me-1" style="font-size:0.95em;"></i>8+ characters</span>
+                        <span id="req-uppercase" class="d-flex align-items-center text-danger"><i class="fas fa-times me-1" style="font-size:0.95em;"></i>Uppercase letter</span>
+                    </div>
+                    <div class="d-flex flex-row align-items-center" style="gap:0.6rem;">
+                        <span id="req-number" class="d-flex align-items-center text-danger"><i class="fas fa-times me-1" style="font-size:0.95em;"></i>Number (0-9)</span>
+                        <span id="req-special" class="d-flex align-items-center text-danger"><i class="fas fa-times me-1" style="font-size:0.95em;"></i>Special char (!@#$)</span>
+                        <span id="req-lowercase" class="d-flex align-items-center text-danger"><i class="fas fa-times me-1" style="font-size:0.95em;"></i>Lowercase letter</span>
+                    </div>
+                </div>
+                <div class="password-strength" style="margin-top:0.10rem;">
+                    <div class="progress" style="height:6px;">
+                        <div class="progress-bar" id="passwordStrengthBar" role="progressbar" style="width:0%"></div>
+                    </div>
+                    <small class="form-text" id="passwordStrengthText" style="font-size:0.95rem;">Password strength: Weak</small>
+                </div>
             </div>
-            <small class="form-text" id="passwordStrengthText">Password strength: Weak</small>
         </div>
     </div>
     
     <div class="mb-3">
-        <label for="confirm_password" class="form-label">
+        <label for="confirm_password" class="form-label" style="font-size:1.15rem;">
             <i class="fas fa-lock me-1"></i>Confirm Password
         </label>
         <input type="password" 
@@ -106,23 +91,22 @@
                name="confirm_password" 
                placeholder="Confirm your password"
                required>
-        <div class="invalid-feedback" id="confirm_password-error"></div>
+        <div class="invalid-feedback" id="confirm_password-error" style="font-size:1.15rem;margin-bottom:0.3rem;"></div>
     </div>
-    
-    
+
     <!-- Terms and Privacy -->
-    <div class="mb-4">
-        <div class="form-check">
-            <input class="form-check-input" type="checkbox" id="terms_accepted" name="terms_accepted" required>
-            <label class="form-check-label" for="terms_accepted">
+    <div class="mb-2">
+        <div class="form-check" style="min-height:28px;">
+            <input class="form-check-input" type="checkbox" id="terms_accepted" name="terms_accepted" required style="min-width:18px;min-height:18px;">
+            <label class="form-check-label ms-2" for="terms_accepted" style="font-size:1.04rem;">
                 I agree to the Terms of Service and Privacy Policy
             </label>
-            <div class="invalid-feedback" id="terms_accepted-error"></div>
+            <div class="invalid-feedback" id="terms_accepted-error" style="font-size:1.04rem;margin-bottom:0.2rem;"></div>
         </div>
     </div>
-    
+
     <!-- Register Button -->
-    <button type="submit" class="btn btn-primary btn-lg w-100 mb-3" id="registerBtn">
+    <button type="submit" class="btn btn-primary btn-lg w-100 mb-2" id="registerBtn" style="min-height:40px;font-size:1.09rem;">
         <span class="btn-text">
             <i class="fas fa-user-plus me-2"></i>Create Account
         </span>
@@ -164,4 +148,29 @@
 </div>
 {% endblock %}
 
-{% block extra_js %}{% endblock %}
+    <form method="POST" action="/register" id="registerForm" novalidate>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="mb-3">
+            <label for="first_name" class="form-label"><i class="fas fa-user me-1"></i>First Name</label>
+            <input type="text" class="form-control form-control-lg" id="first_name" name="first_name" placeholder="John" required>
+        </div>
+        <div class="mb-3">
+            <label for="last_name" class="form-label"><i class="fas fa-user me-1"></i>Last Name</label>
+            <input type="text" class="form-control form-control-lg" id="last_name" name="last_name" placeholder="Doe" required>
+        </div>
+        <div class="mb-3">
+            <label for="email" class="form-label"><i class="fas fa-envelope me-1"></i>Email Address</label>
+            <input type="email" class="form-control form-control-lg" id="email" name="email" placeholder="Enter your email" required>
+        </div>
+        <div class="mb-3">
+            <label for="password" class="form-label"><i class="fas fa-lock me-1"></i>Password</label>
+            <input type="password" class="form-control form-control-lg" id="password" name="password" placeholder="Create a password" required>
+        </div>
+        <div class="mb-3">
+            <label for="confirm_password" class="form-label"><i class="fas fa-lock me-1"></i>Confirm Password</label>
+            <input type="password" class="form-control form-control-lg" id="confirm_password" name="confirm_password" placeholder="Confirm your password" required>
+        </div>
+        <button type="submit" class="btn btn-primary btn-lg w-100 mb-2" id="registerBtn">
+            <span class="btn-text"><i class="fas fa-user-plus me-2"></i>Create Account</span>
+        </button>
+    </form>

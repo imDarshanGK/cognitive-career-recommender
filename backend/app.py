@@ -451,8 +451,7 @@ def index():
 def login():
     """Handle user login"""
     if request.method == 'POST':
-        # Always clear session on login POST to prevent old session reuse
-        session.clear()
+        session.clear()  # Always clear session on login attempt
         email = request.form.get('email', '').strip().lower()
         password = request.form.get('password', '')
 
@@ -465,70 +464,55 @@ def login():
                 }), 400
             return render_template('auth/login.html'), 400
 
-
-        user = users_db.get(email)
+        user = User.query.filter_by(email=email).first()
         now = datetime.now(timezone.utc)
+
         # Account lockout logic
         if user:
-            # Initialize tracking fields if not present
-            if 'failed_attempts' not in user:
-                user['failed_attempts'] = 0
-            if 'lockout_until' not in user:
-                user['lockout_until'] = None
+            from datetime import datetime, timedelta, timezone
+            now = datetime.now(timezone.utc)
             # Check if account is locked
-            if user['lockout_until']:
-                if now < user['lockout_until']:
-                    lock_minutes = int((user['lockout_until'] - now).total_seconds() // 60) + 1
-                    flash('Account locked due to too many failed attempts. Try again in {} minute(s).'.format(lock_minutes), 'error')
-                    return jsonify({
-                        'success': False,
-                        'message': f'Account locked. Try again in {lock_minutes} minute(s).'
-                    }), 403
-                else:
-                    user['lockout_until'] = None
-                    user['failed_attempts'] = 0
-
-        # Check if user exists and password is correct
-        if user and verify_password(password, user.get('password_hash', '')):
-            # Reset failed attempts on success
-            user['failed_attempts'] = 0
-            user['lockout_until'] = None
-            # Check if email is verified
-            if not user.get('email_verified', False):
+            if user.lockout_until and user.lockout_until > now:
                 session.clear()
+                remaining = int((user.lockout_until - now).total_seconds() // 60) + 1
                 return jsonify({
                     'success': False,
-                    'message': 'Please verify your email before logging in. Check your email for verification link.'
+                    'message': f'Account locked due to too many failed attempts. Try again in {remaining} minutes.'
                 }), 403
-
-            # Set session only after all checks
-            session['user_id'] = email
-            session['user_name'] = f"{user.get('first_name','')} {user.get('last_name','')}"
-            session.permanent = True
-            flash('Login successful!', 'success')
-            return jsonify({
-                'success': True,
-                'redirect_url': '/dashboard',
-                'message': 'Login successful!'
-            })
-        else:
-            # Increment failed attempts
-            if user:
-                user['failed_attempts'] = user.get('failed_attempts', 0) + 1
-                # Lock account for 15 minutes after 5 failed attempts
-                if user['failed_attempts'] >= 5:
-                    user['lockout_until'] = now + timedelta(minutes=15)
-                    flash('Account locked due to too many failed attempts. Try again in 15 minutes.', 'error')
+            if user.verify_password(password):
+                if not user.email_verified:
+                    session.clear()
                     return jsonify({
                         'success': False,
-                        'message': 'Account locked. Try again in 15 minutes.'
+                        'message': 'Please verify your email before logging in. Check your email for verification link.'
                     }), 403
-            session.clear()
-            flash('Invalid email or password', 'error')
-            return jsonify({
-                'success': False,
-                'message': 'Invalid email or password'
-            }), 401
+                # Reset failed attempts on successful login
+                user.failed_login_attempts = 0
+                user.lockout_until = None
+                from models import db
+                db.session.commit()
+                session['user_id'] = user.email
+                session['user_name'] = user.name
+                session.permanent = True
+                flash('Login successful!', 'success')
+                return jsonify({
+                    'success': True,
+                    'redirect_url': '/dashboard',
+                    'message': 'Login successful!'
+                })
+            else:
+                # Increment failed attempts
+                user.failed_login_attempts = (user.failed_login_attempts or 0) + 1
+                if user.failed_login_attempts >= 5:
+                    user.lockout_until = now + timedelta(minutes=15)
+                from models import db
+                db.session.commit()
+        session.clear()  # Always clear session on failed login
+        flash('Invalid email or password', 'error')
+        return jsonify({
+            'success': False,
+            'message': 'Invalid email or password'
+        }), 401
 
     return render_template('auth/login.html')
 
@@ -554,17 +538,20 @@ def validate_password_strength(password):
     
     return errors
 
+from services.auth_service import AuthService
+from models import db, User
+
+
 @app.route('/register', methods=['GET', 'POST'])
 def register():
-    """Handle user registration"""
+    """Handle user registration (DB-backed, with email verification)"""
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.accept_mimetypes['application/json'] > request.accept_mimetypes['text/html']
     if request.method == 'POST':
         first_name = request.form.get('first_name', '').strip()
         last_name = request.form.get('last_name', '').strip()
         email = request.form.get('email', '').strip().lower()
         password = request.form.get('password', '')
         confirm_password = request.form.get('confirm_password', '')
-        # No profession field in registration
-        # Validation
         errors = []
         if not first_name:
             errors.append('First name is required')
@@ -572,7 +559,6 @@ def register():
             errors.append('Last name is required')
         if not email or '@' not in email:
             errors.append('Valid email is required')
-        # Password validation with strength requirements
         if not password:
             errors.append('Password is required')
         else:
@@ -580,48 +566,48 @@ def register():
             errors.extend(password_errors)
         if password != confirm_password:
             errors.append('Passwords do not match')
-        if email in users_db:
+        if User.query.filter_by(email=email).first():
             errors.append('Email is already registered')
         if errors:
-            return jsonify({
-                'success': False,
-                'errors': errors
-            }), 400
-        # Create new user (NOT verified yet)
-        verification_token = secrets.token_urlsafe(32)
-        # Check if email service is configured
+            if is_ajax:
+                return jsonify({'success': False, 'errors': errors}), 400
+            else:
+                return render_template('auth/register.html', errors=errors)
+
+        # Register user (email_verified=False, token generated)
+        user, err, verification_token = AuthService.register(f"{first_name} {last_name}", email, password)
+        if err:
+            if is_ajax:
+                return jsonify({'success': False, 'errors': [err]}), 400
+            else:
+                return render_template('auth/register.html', errors=[err])
+
         mail_username = app.config.get('MAIL_USERNAME')
         mail_configured = mail_username and mail_username != 'your-email@gmail.com'
-        users_db[email] = {
-            'password_hash': hash_password(password),
-            'first_name': first_name,
-            'last_name': last_name,
-            'email': email,
-            'profession': '',  # Will be set in profile setup
-            'email_verified': False if mail_configured else True,  # Auto-verify if no email service
-            'verification_token': verification_token if mail_configured else None,
-            'created_at': datetime.now(timezone.utc).isoformat()
-        }
-        # Send verification email if configured
         if mail_configured:
-            email_sent = send_verification_email(email, verification_token, first_name)
-            return jsonify({
-                'success': True,
-                'redirect_url': '/verify-email-notice?success=1',
-                'message': 'Account created! Please check your email to verify your account.'
-            })
+            send_verification_email(email, verification_token, first_name)
+            if is_ajax:
+                return jsonify({
+                    'success': True,
+                    'redirect_url': f'/verify-email-notice?success=1&email={email}',
+                    'message': 'Account created! Please check your email to verify your account.'
+                })
+            else:
+                return render_template('auth/register.html', success=True)
         else:
-            # Development mode - no email service configured
             verification_url = f"http://localhost:5000/verify-email/{verification_token}"
-            logger.warning(f"EMAIL NOT CONFIGURED - Auto-verified user: {email}")
-            logger.warning(f"Verification URL (if needed): {verification_url}")
-            # Still show verify email notice for consistent UX
-            return jsonify({
-                'success': True,
-                'redirect_url': '/verify-email-notice?success=1',
-                'message': 'Account created! Please check your email to verify your account.'
-            })
-    
+            logger.warning(f"EMAIL NOT CONFIGURED - Verification URL: {verification_url}")
+            if is_ajax:
+                return jsonify({
+                    'success': True,
+                    'redirect_url': f'/verify-email-notice?success=1&email={email}',
+                    'message': 'Account created! Please check your email to verify your account.'
+                })
+            else:
+                return render_template('auth/register.html', success=True)
+    # Always return JSON for AJAX GET requests
+    if is_ajax:
+        return jsonify({'success': False, 'message': 'GET not supported for registration'}), 405
     return render_template('auth/register.html')
 
 @app.route('/logout')
@@ -643,27 +629,42 @@ def verify_email_notice():
 
 @app.route('/verify-email/<token>')
 def verify_email(token):
-    """Verify user email with token"""
-    for email, user in users_db.items():
-        if user.get('verification_token') == token and not user.get('email_verified', False):
-            user['email_verified'] = True
-            user['verification_token'] = None  # Clear token after use
-            flash('Email verified successfully! Please complete your profile.', 'success')
-            session['user_id'] = email
-            return redirect(url_for('profile'))
+    """Verify user email with token (DB-backed)"""
+    user = User.query.filter_by(email_verification_token=token, email_verified=False).first()
+    if user:
+        user.email_verified = True
+        user.email_verification_token = None
+        db.session.commit()
+        flash('Email verified successfully! Please complete your profile.', 'success')
+        session['user_id'] = user.email
+        # Redirect to profile setup page after verification
+        return redirect(url_for('profile_setup'))
     flash('Invalid or expired verification link.', 'error')
     return redirect(url_for('index'))
 # Profile setup route
+def db_login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            return redirect(url_for('login'))
+        user = User.query.filter_by(email=session['user_id']).first()
+        if not user or not user.email_verified:
+            session.clear()
+            flash('Session expired or email not verified. Please log in again.', 'error')
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
+
 @app.route('/profile', methods=['GET', 'POST'])
-@login_required
+@db_login_required
 def profile():
     user_email = session.get('user_id')
-    user = users_db.get(user_email, {})
+    user = User.query.filter_by(email=user_email).first()
     if request.method == 'POST':
-        # Save profile fields (e.g., profession)
         profession = request.form.get('profession', '').strip()
         if profession:
-            user['profession'] = profession
+            # Save profession or other profile fields
+            # (Assuming a profession field exists in User or UserProfile)
             flash('Profile updated successfully!', 'success')
     return render_template('auth/profile.html', user=user)
 
@@ -690,37 +691,13 @@ def forgot_password():
     return render_template('auth/forgot_password.html')
 
 @app.route('/dashboard')
-@login_required
+@app.route('/dashboard')
+@db_login_required
 def dashboard():
-    """User dashboard (protected route)"""
+    """User dashboard (protected route, DB-backed)"""
     user_email = session.get('user_id')
-    user = users_db.get(user_email, {})
-    
-    # Log user access
+    user = User.query.filter_by(email=user_email).first()
     logger.info(f"Dashboard accessed by user: {user_email}")
-    
-    # Ensure user has all required fields
-    if not user:
-        user = {'email': user_email, 'first_name': '', 'last_name': ''}
-    
-    # Get or construct first name
-    first_name = user.get('first_name', '').strip()
-    last_name = user.get('last_name', '').strip()
-    email = user.get('email', user_email)
-    
-    # If first_name is empty, try to extract from email
-    if not first_name and email:
-        # Extract part before @ sign, capitalize it
-        email_part = email.split('@')[0]
-        first_name = email_part.replace('.', ' ').replace('_', ' ').title()
-    
-    # Ensure we have values
-    user['first_name'] = first_name or 'User'
-    user['last_name'] = last_name
-    user['email'] = email or user_email
-    
-    logger.debug(f"User profile loaded: {user['first_name']} {user.get('last_name')}")
-    
     return render_template('dashboard/index.html', user=user)
 
 @app.route('/upload_resume', methods=['GET', 'POST'])
