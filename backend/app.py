@@ -992,6 +992,22 @@ def get_current_profile():
     profile_payload = _load_user_profile_snapshot(user)
     return jsonify({'has_profile': bool(profile_payload), 'profile': profile_payload or {}})
 
+
+@app.route('/api/profile/current', methods=['DELETE'])
+@db_login_required
+def clear_current_profile():
+    """Delete persisted profile snapshot for the current user."""
+    user_email = session.get('user_id')
+    user = User.query.filter_by(email=user_email).first()
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+
+    UserSkill.query.filter_by(user_id=user.id).delete(synchronize_session=False)
+    UserProfile.query.filter_by(user_id=user.id).delete(synchronize_session=False)
+    db.session.commit()
+
+    return jsonify({'status': 'Profile cleared'})
+
 @app.route('/upload_resume', methods=['GET', 'POST'])
 @db_login_required
 def upload_resume():

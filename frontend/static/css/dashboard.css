@@ -188,7 +188,7 @@
     background: linear-gradient(135deg, #123b71, #15558f 52%, #0f7188);
     color: #f2f8ff;
     border-radius: 20px;
-    padding: 26px;
+    padding: 24px;
     box-shadow: var(--dash-shadow);
     display: grid;
     grid-template-columns: 1fr minmax(280px, 360px);
@@ -211,7 +211,7 @@
 }
 
 .hero-subtitle {
-    margin: 10px 0 14px;
+    margin: 10px 0 12px;
     color: rgba(240, 248, 255, 0.92);
     max-width: 62ch;
 }
@@ -256,13 +256,17 @@
 }
 
 .meta-value {
-    font-weight: 700;
-    margin-bottom: 4px;
+    font-weight: 600;
+    margin-bottom: 6px;
+    font-size: 1rem;
+    line-height: 1.4;
+    color: rgba(247, 252, 255, 0.93);
 }
 
 .meta-note {
-    color: rgba(237, 246, 255, 0.82);
-    font-size: 0.83rem;
+    color: rgba(232, 245, 255, 0.9);
+    font-size: 0.88rem;
+    line-height: 1.45;
 }
 
 .input-grid,
@@ -308,9 +312,15 @@
     color: #0d4f88;
     border: 1px solid #b7dfff;
     border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     padding: 3px 10px;
     font-size: 0.74rem;
     font-weight: 700;
+    line-height: 1;
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 
 .file-drop-zone {
@@ -420,8 +430,14 @@
 }
 
 #profileCompletionText {
-    font-size: 0.9rem;
+    font-size: 0.92rem;
     font-weight: 600;
+    color: rgba(246, 252, 255, 0.96) !important;
+    letter-spacing: 0.1px;
+}
+
+.meta-card .small.text-muted {
+    color: rgba(223, 239, 255, 0.94) !important;
 }
 
 .recommendation-card {
@@ -669,6 +685,7 @@ html[data-bs-theme='dark'] .manual-form .form-label {
     .hero-panel {
         grid-template-columns: 1fr;
     }
+
 }
 
 @media (max-width: 760px) {
@@ -683,4 +700,5 @@ html[data-bs-theme='dark'] .manual-form .form-label {
     .section-header h2 {
         font-size: 1.25rem;
     }
+
 }

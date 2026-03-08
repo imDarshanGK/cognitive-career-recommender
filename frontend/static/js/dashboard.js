@@ -19,6 +19,7 @@ const DashboardModule = {
             uploadResume: '/upload_resume',
             analyzeProfile: '/analyze_profile',
             currentProfile: '/api/profile/current',
+            clearProfile: '/api/profile/current',
             feedback: '/feedback',
             feedbackHistory: '/api/feedback',
             liveJobs: '/api/jobs'
@@ -29,16 +30,20 @@ const DashboardModule = {
     state: {
         isUploading: false,
         hasRecommendations: false,
+        hasSessionInput: false,
         currentUser: null,
         lastProfile: null,
         lastSkills: [],
         allRecommendations: [],
+        allLiveJobs: [],
+        liveJobsSource: 'adzuna',
         currentFilters: {
             experience: '',
             workType: '',
             industry: '',
             matchScore: 0,
-            location: ''
+            location: '',
+            salaryMin: 0
         }
     },
     
@@ -208,10 +213,15 @@ DashboardModule.setupQuickActionEvents = function() {
             this.submitProfileForAnalysis(this.state.lastProfile, this.state.lastSkills);
         }
     });
+
+    // Clear saved profile button
+    document.getElementById('clearProfileBtn')?.addEventListener('click', () => {
+        this.clearSavedProfile();
+    });
 };
 
 DashboardModule.setupFilterEvents = function() {
-    const filterInputs = ['filterExperience', 'filterWorkType', 'filterIndustry', 'filterMatchScore', 'filterLocation'];
+    const filterInputs = ['filterExperience', 'filterWorkType', 'filterIndustry', 'filterMatchScore', 'filterLocation', 'filterSalary'];
     const clearBtn = document.getElementById('clearFiltersBtn');
     
     filterInputs.forEach(inputId => {
@@ -227,7 +237,7 @@ DashboardModule.setupFilterEvents = function() {
         filterInputs.forEach(inputId => {
             const el = document.getElementById(inputId);
             if (el) {
-                if (inputId === 'filterMatchScore') {
+                if (inputId === 'filterMatchScore' || inputId === 'filterSalary') {
                     el.value = '0';
                 } else {
                     el.value = '';
@@ -245,7 +255,8 @@ DashboardModule.applyFilters = function() {
         workType: document.getElementById('filterWorkType')?.value || '',
         industry: document.getElementById('filterIndustry')?.value || '',
         matchScore: parseInt(document.getElementById('filterMatchScore')?.value || 0),
-        location: document.getElementById('filterLocation')?.value?.toLowerCase() || ''
+        location: document.getElementById('filterLocation')?.value?.toLowerCase() || '',
+        salaryMin: parseInt(document.getElementById('filterSalary')?.value || 0)
     };
     
     // Filter recommendations
@@ -254,6 +265,34 @@ DashboardModule.applyFilters = function() {
     if (this.state.currentFilters.experience) {
         filtered = filtered.filter(rec => {
             return (rec.experience_level || '').toLowerCase() === this.state.currentFilters.experience.toLowerCase();
+        });
+    }
+
+    if (this.state.currentFilters.workType) {
+        filtered = filtered.filter(rec => {
+            const recType = this.normalizeWorkType(rec.work_type || rec.employment_type || rec.description || '');
+            return recType === this.state.currentFilters.workType;
+        });
+    }
+
+    if (this.state.currentFilters.industry) {
+        filtered = filtered.filter(rec => {
+            const recIndustry = this.normalizeIndustry(rec.industry || rec.job_title || rec.description || '');
+            return recIndustry === this.state.currentFilters.industry;
+        });
+    }
+
+    if (this.state.currentFilters.location) {
+        filtered = filtered.filter(rec => {
+            const locationText = String(rec.location || '').toLowerCase();
+            return locationText.includes(this.state.currentFilters.location);
+        });
+    }
+
+    if ((this.state.currentFilters.salaryMin || 0) > 0) {
+        filtered = filtered.filter(rec => {
+            const salaryValue = this.jobSalaryValue(rec);
+            return salaryValue && salaryValue >= this.state.currentFilters.salaryMin;
         });
     }
     
@@ -266,13 +305,99 @@ DashboardModule.applyFilters = function() {
     
     // Re-render with filtered results
     this.renderRecommendations(filtered, this.state.lastSkills || []);
+
+    const filteredLiveJobs = this.filterLiveJobs(this.state.allLiveJobs || [], this.state.currentFilters);
+    this.renderLiveJobs(filteredLiveJobs, this.state.liveJobsSource || 'adzuna', { persist: false, filtered: true });
     
     // Show filter indicator
     const hasActiveFilters = Object.values(this.state.currentFilters).some(v => v !== '' && v !== 0);
     const filterIndicator = document.querySelector('[id="filterPanel"]');
     if (hasActiveFilters && filterIndicator) {
         filterIndicator.style.borderLeft = '3px solid #007bff';
+    } else if (filterIndicator) {
+        filterIndicator.style.borderLeft = 'none';
     }
+};
+
+DashboardModule.normalizeExperienceLevel = function(value) {
+    const text = String(value || '').toLowerCase();
+    if (!text) return '';
+    if (/(senior|lead|principal|staff|architect|expert)/.test(text)) return 'senior';
+    if (/(mid|intermediate)/.test(text)) return 'mid';
+    if (/(entry|junior|fresher|graduate|intern)/.test(text)) return 'entry';
+    return '';
+};
+
+DashboardModule.normalizeWorkType = function(value) {
+    const text = String(value || '').toLowerCase();
+    if (!text) return '';
+    if (text.includes('hybrid')) return 'hybrid';
+    if (text.includes('remote') || text.includes('work from home') || text.includes('wfh')) return 'remote';
+    return 'onsite';
+};
+
+DashboardModule.normalizeIndustry = function(value) {
+    const text = String(value || '').toLowerCase();
+    if (!text) return '';
+    if (/fintech|bank|payments/.test(text)) return 'fintech';
+    if (/health|healthcare|medical|hospital/.test(text)) return 'healthcare';
+    if (/ecommerce|e-commerce|retail/.test(text)) return 'ecommerce';
+    if (/consulting|consultant|advisory/.test(text)) return 'consulting';
+    return 'technology';
+};
+
+DashboardModule.inferJobExperienceLevel = function(job) {
+    const direct = this.normalizeExperienceLevel(job.experience_level);
+    if (direct) return direct;
+
+    const text = `${job.job_title || ''} ${job.description || ''}`.toLowerCase();
+    if (!text) return '';
+
+    if (/(senior|lead|principal|staff|architect|\b[6-9]\+\s*years|\b10\+\s*years)/.test(text)) return 'senior';
+    if (/(mid|intermediate|\b[3-5]\+\s*years)/.test(text)) return 'mid';
+    if (/(entry|junior|fresher|graduate|intern|\b0-2\s*years|\b[1-2]\+\s*years)/.test(text)) return 'entry';
+
+    return '';
+};
+
+DashboardModule.jobSalaryValue = function(job) {
+    const min = Number(job.salary_min || 0);
+    const max = Number(job.salary_max || 0);
+    if (min > 0 && max > 0) return Math.round((min + max) / 2);
+    return min || max || 0;
+};
+
+DashboardModule.filterLiveJobs = function(jobs, filters) {
+    if (!Array.isArray(jobs) || !jobs.length) return [];
+
+    return jobs.filter(job => {
+        if (filters.location) {
+            const locationText = String(job.location || '').toLowerCase();
+            if (!locationText.includes(filters.location)) return false;
+        }
+
+        if (filters.experience) {
+            const level = this.inferJobExperienceLevel(job);
+            if (level !== filters.experience) return false;
+        }
+
+        if (filters.workType) {
+            const workType = this.normalizeWorkType(job.employment_type || job.description || job.location || '');
+            if (workType !== filters.workType) return false;
+        }
+
+        if (filters.industry) {
+            const industry = this.normalizeIndustry(job.industry || job.job_title || job.description || '');
+            if (industry !== filters.industry) return false;
+        }
+
+        if ((filters.salaryMin || 0) > 0) {
+            const salaryValue = this.jobSalaryValue(job);
+            if (!salaryValue || salaryValue < filters.salaryMin) return false;
+        }
+
+        return true;
+    });
 };
 
 /**
@@ -295,6 +420,8 @@ DashboardModule.handleFileUpload = function(file) {
     
     // Start upload
     this.state.isUploading = true;
+    // Clear previous analysis output before processing a new resume file.
+    this.resetAnalysisOutputs();
     this.showUploadProgress();
     
     // Create form data
@@ -433,6 +560,7 @@ DashboardModule.handleUploadSuccess = function(response) {
     // For upload mode, analyze resume-extracted skills only (avoid stale manual profile reuse).
     const resumeOnlyProfile = this.mergeProfiles(profilePayload, {});
     const resumeOnlySkills = resumeOnlyProfile.skills || [];
+    this.updateExtractedSkillsPanel(resumeOnlySkills);
 
     this.setProfileStatus('Resume parsed');
     // Update form fields only with extracted values; preserve existing manual values when extracted is blank.
@@ -442,15 +570,93 @@ DashboardModule.handleUploadSuccess = function(response) {
         this.state.lastProfile = null;
         this.state.lastSkills = [];
         this.setProfileStatus('Resume parsed. Add skills to run matching.');
+        this.resetAnalysisOutputs();
         this.showAlert('warning', 'Resume upload succeeded, but no reliable skills were extracted from this file. Add skills manually or upload a clearer resume format.');
         return;
     }
 
     this.state.lastProfile = resumeOnlyProfile;
     this.state.lastSkills = resumeOnlySkills;
-    this.showAlert('info', `Using ${resumeOnlySkills.length} resume-extracted skills for matching.`);
+    this.state.hasSessionInput = true;
+    this.showAlert('info', `Using ${resumeOnlySkills.length} resume-extracted skills for matching: ${resumeOnlySkills.slice(0, 8).join(', ')}${resumeOnlySkills.length > 8 ? '...' : ''}`);
 
     this.submitProfileForAnalysis(resumeOnlyProfile, resumeOnlySkills);
+};
+
+DashboardModule.resetAnalysisOutputs = function() {
+    this.showEmptyRecommendations();
+    this.updateSkillGapSummary([]);
+    this.updateRoadmap([]);
+    this.resetLiveJobsPanel({
+        marketTitle: 'Live Market Snapshot',
+        marketSubtitle: 'Live job opportunities powered by Adzuna API.',
+        title: 'Live Jobs Not Loaded',
+        subtitle: 'Complete your profile and run matching to load relevant live jobs.'
+    });
+
+    this.state.allRecommendations = [];
+    this.state.allLiveJobs = [];
+    this.state.liveJobsSource = 'adzuna';
+
+    const filterPanel = document.getElementById('filterPanel');
+    if (filterPanel) filterPanel.classList.add('d-none');
+
+    const rerunBtn = document.getElementById('rerunAnalysisBtn');
+    if (rerunBtn) rerunBtn.style.display = 'none';
+};
+
+DashboardModule.updateExtractedSkillsPanel = function(skills) {
+    const panel = document.getElementById('extractedSkillsPanel');
+    const list = document.getElementById('extractedSkillsList');
+    if (!panel || !list) return;
+
+    if (!Array.isArray(skills) || !skills.length) {
+        panel.classList.add('d-none');
+        list.innerHTML = '';
+        return;
+    }
+
+    list.innerHTML = skills.slice(0, 16)
+        .map(skill => `<span class="tag-item matching" style="margin-right: 6px; margin-bottom: 6px; display: inline-block;">${skill}</span>`)
+        .join('');
+    panel.classList.remove('d-none');
+};
+
+DashboardModule.clearSavedProfile = function() {
+    const csrfToken = this.getCsrfToken();
+
+    fetch(this.config.apiEndpoints.clearProfile, {
+        method: 'DELETE',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            ...(csrfToken ? { 'X-CSRFToken': csrfToken } : {})
+        }
+    })
+        .then(async response => {
+            const payload = await response.json().catch(() => ({}));
+            if (!response.ok) {
+                throw new Error(payload.error || 'Failed to clear saved profile.');
+            }
+            return payload;
+        })
+        .then(() => {
+            this.state.lastProfile = null;
+            this.state.lastSkills = [];
+            this.state.allRecommendations = [];
+            this.state.hasSessionInput = false;
+            this.setProfileStatus('Saved profile cleared.');
+            this.updateProfileCompletion({});
+            this.updateExtractedSkillsPanel([]);
+
+            const form = document.getElementById('manualProfileForm');
+            form?.reset();
+
+            this.resetAnalysisOutputs();
+            this.showAlert('success', 'Saved profile cleared. You can start fresh.');
+        })
+        .catch(error => {
+            this.showAlert('error', error.message || 'Could not clear saved profile.');
+        });
 };
 
 DashboardModule.hasMeaningfulProfile = function(profile) {
@@ -533,6 +739,7 @@ DashboardModule.handleManualProfileSubmit = function() {
 
     this.state.lastProfile = payload;
     this.state.lastSkills = skills;
+    this.state.hasSessionInput = true;
     this.setProfileStatus('Manual profile ready');
     this.submitProfileForAnalysis(payload, skills);
 };
@@ -665,9 +872,13 @@ DashboardModule.submitProfileForAnalysis = function(profilePayload, userSkills) 
         .then(data => {
             // Profile analysis completed
 
-            if (data.data_source && data.data_source !== 'adzuna' && data.data_message) {
-                this.setProfileStatus('Live market data unavailable');
-                this.showAlert('warning', data.data_message);
+            if (data.data_message) {
+                if (data.data_source && data.data_source !== 'adzuna') {
+                    this.setProfileStatus('Live market data unavailable');
+                    this.showAlert('warning', data.data_message);
+                } else {
+                    this.showAlert('info', data.data_message);
+                }
             }
 
             if (data.recommendations && data.recommendations.length) {
@@ -680,7 +891,12 @@ DashboardModule.submitProfileForAnalysis = function(profilePayload, userSkills) 
                 this.showEmptyRecommendations();
                 this.updateSkillGapSummary([]);
                 this.updateRoadmap([]);
-                this.loadLiveJobs([], profilePayload, userSkills);
+                this.resetLiveJobsPanel({
+                    marketTitle: 'Live Market Snapshot',
+                    marketSubtitle: 'Live job opportunities powered by Adzuna API.',
+                    title: 'No Relevant Live Jobs Yet',
+                    subtitle: 'Run matching with more skills to load relevant live jobs.'
+                });
                 return;
             }
 
@@ -693,6 +909,7 @@ DashboardModule.submitProfileForAnalysis = function(profilePayload, userSkills) 
             // Prefer live jobs returned from the same analysis call for consistency.
             if (Array.isArray(data.live_jobs) && data.live_jobs.length) {
                 this.renderLiveJobs(data.live_jobs, data.data_source || 'adzuna');
+                this.applyFilters();
             } else {
                 // Fallback fetch using matched careers context.
                 this.loadLiveJobs(data.recommendations, profilePayload, userSkills);
@@ -775,12 +992,17 @@ DashboardModule.resetLiveJobsPanel = function(options = {}) {
     empty.classList.remove('d-none');
 };
 
-DashboardModule.renderLiveJobs = function(jobs, source = 'adzuna') {
+DashboardModule.renderLiveJobs = function(jobs, source = 'adzuna', options = {}) {
     const list = document.getElementById('liveJobsList');
     const empty = document.getElementById('liveJobsEmpty');
     const title = document.getElementById('liveMarketTitle');
     const subtitle = document.getElementById('liveMarketSubtitle');
     if (!list || !empty) return;
+
+    if (options.persist !== false) {
+        this.state.allLiveJobs = Array.isArray(jobs) ? jobs.slice() : [];
+        this.state.liveJobsSource = source;
+    }
 
     const sourceValue = String(source || '').toLowerCase();
     if (title) {
@@ -794,13 +1016,16 @@ DashboardModule.renderLiveJobs = function(jobs, source = 'adzuna') {
 
     if (!Array.isArray(jobs) || !jobs.length) {
         this.resetLiveJobsPanel({
-            title: 'Live Jobs Unavailable',
-            subtitle: 'Live job data unavailable. Please refresh or try again later.'
+            title: options.filtered ? 'No Jobs Match Current Filters' : 'Live Jobs Unavailable',
+            subtitle: options.filtered
+                ? 'Try broader location, experience, or salary filters.'
+                : 'Live job data unavailable. Please refresh or try again later.'
         });
         return;
     }
 
     const cards = jobs.slice(0, 6).map(job => {
+        const experienceLevel = this.inferJobExperienceLevel(job);
         const salary = job.salary_min || job.salary_max
             ? `$${job.salary_min || ''} - $${job.salary_max || ''}`
             : 'Salary not listed';
@@ -816,6 +1041,7 @@ DashboardModule.renderLiveJobs = function(jobs, source = 'adzuna') {
                 </div>
                 <div class="explanation-text">
                     <div><i class="fas fa-map-marker-alt me-1"></i>${job.location || 'Location'}</div>
+                    <div><i class="fas fa-user-clock me-1"></i>${experienceLevel ? (experienceLevel.charAt(0).toUpperCase() + experienceLevel.slice(1)) : 'Experience not specified'}</div>
                     <div><i class="fas fa-dollar-sign me-1"></i>${salary}</div>
                 </div>
                 <div class="recommendation-actions">
@@ -851,7 +1077,7 @@ DashboardModule.loadLiveJobs = function(recommendations, profilePayload, userSki
         return;
     }
 
-    const params = new URLSearchParams({ query: query, location: 'India', results: 6 });
+    const params = new URLSearchParams({ query: query, location: 'India', results: 20 });
 
     fetch(`${this.config.apiEndpoints.liveJobs}?${params.toString()}`)
         .then(response => response.json())
@@ -873,6 +1099,7 @@ DashboardModule.loadLiveJobs = function(recommendations, profilePayload, userSki
                 : (data && data.jobs && data.jobs.length ? data.jobs : []);
 
             this.renderLiveJobs(jobs, source);
+            this.applyFilters();
         })
         .catch(() => {
             this.resetLiveJobsPanel({
@@ -906,10 +1133,26 @@ DashboardModule.renderRecommendations = function(recommendations, userSkills) {
         const score = typeof rec.match_score === 'number' 
             ? (rec.match_score <= 1 ? rec.match_score * 100 : rec.match_score)
             : 0;
-        return score > 0;
+        const matchedCount = Array.isArray(rec.matched_skills) ? rec.matched_skills.length : 0;
+        return score >= 40 && matchedCount >= 2;
     });
 
-    const allRecs = suitableRecs.slice(0, 6);
+    let allRecs = suitableRecs.slice(0, 6);
+
+    if (!allRecs.length) {
+        const lowConfidence = recommendations.filter(rec => {
+            const score = typeof rec.match_score === 'number'
+                ? (rec.match_score <= 1 ? rec.match_score * 100 : rec.match_score)
+                : 0;
+            const matchedCount = Array.isArray(rec.matched_skills) ? rec.matched_skills.length : 0;
+            return score >= 25 && matchedCount >= 1;
+        });
+
+        if (lowConfidence.length) {
+            allRecs = lowConfidence.slice(0, 4);
+            this.showAlert('info', 'Showing low-confidence matches. Add more skills for stronger recommendations.');
+        }
+    }
 
     if (!allRecs.length) {
         list.classList.add('d-none');
@@ -1208,7 +1451,7 @@ DashboardModule.setProfileStatus = function(statusText) {
     }
 };
 
-DashboardModule.updateProfileCompletion = function(profile) {
+DashboardModule.updateProfileCompletion = function(profile, mode = 'active') {
     // Calculate profile completion percentage
     let completionScore = 0;
     const totalComponents = 5;
@@ -1252,10 +1495,17 @@ DashboardModule.updateProfileCompletion = function(profile) {
     if (progressBar) {
         progressBar.style.width = completionPercent + '%';
         progressBar.setAttribute('aria-valuenow', completionPercent);
+        if (mode === 'saved') {
+            progressBar.classList.remove('bg-success');
+            progressBar.classList.add('bg-info');
+        } else {
+            progressBar.classList.remove('bg-info');
+            progressBar.classList.add('bg-success');
+        }
     }
     
     if (completionText) {
-        completionText.textContent = completionPercent + '% complete';
+        completionText.textContent = `${completionPercent}% complete`;
     }
 };
 
@@ -1274,6 +1524,12 @@ DashboardModule.showEmptyRecommendations = function() {
 DashboardModule.getPersonalizedRecommendations = function() {
     const formProfile = this.buildProfileFromCurrentForm();
     const effectiveProfile = this.mergeProfiles(this.state.lastProfile || {}, formProfile);
+
+    if (!this.state.hasSessionInput) {
+        this.showAlert('info', 'For fresh results, first upload a resume or click "Run Manual Analysis" in this session.');
+        this.scrollToSection('input-modes');
+        return;
+    }
 
     if (!this.hasMeaningfulProfile(effectiveProfile)) {
         this.showAlert('warning', 'Choose a resume or manual profile input first.');
@@ -1475,6 +1731,7 @@ DashboardModule.hideModal = function() {
  */
 DashboardModule.loadUserData = function() {
     this.state.currentUser = null;
+    this.state.hasSessionInput = false;
 
     fetch(this.config.apiEndpoints.currentProfile, {
         method: 'GET',
@@ -1494,15 +1751,17 @@ DashboardModule.loadUserData = function() {
             }
 
             const profile = data.profile;
-            this.populateManualProfileForm(profile);
-            this.state.lastProfile = profile;
-            this.state.lastSkills = Array.isArray(profile.skills) ? profile.skills : [];
-            this.updateProfileCompletion(profile);
 
-            if (this.state.lastSkills.length > 0) {
-                this.setProfileStatus('Saved profile loaded. Click Generate Career Matches.');
+            // Keep saved profile informational only; do not auto-fill or surface snapshot metrics in hero.
+            this.state.lastProfile = null;
+            this.state.lastSkills = [];
+            this.updateProfileCompletion({});
+
+            const savedSkills = Array.isArray(profile.skills) ? profile.skills : [];
+            if (savedSkills.length > 0) {
+                this.setProfileStatus('No active profile');
             } else {
-                this.setProfileStatus('Saved profile is incomplete. Add skills to continue.');
+                this.setProfileStatus('No active profile');
                 this.resetLiveJobsPanel({
                     title: 'Live Jobs Not Loaded',
                     subtitle: 'Complete your profile and run matching to load relevant live jobs.'
