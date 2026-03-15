@@ -7,7 +7,8 @@ RUN apt-get update && apt-get install -y \
     gcc \
     g++ \
     make \
-    libatlas-base-dev \
+    libopenblas-dev \
+    libgomp1 \
     && rm -rf /var/lib/apt/lists/*
 
 # Upgrade pip, wheel, setuptools to latest
