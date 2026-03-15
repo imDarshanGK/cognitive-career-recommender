@@ -15,6 +15,7 @@ import logging
 import tempfile
 import shutil
 import smtplib
+import ssl
 import re
 import json
 from email.mime.text import MIMEText
@@ -268,22 +269,74 @@ def _delete_reset_token(token):
         conn.execute("DELETE FROM password_reset_tokens WHERE token = ?", (token,))
 
 
+def _get_mail_settings():
+    mail_server = (app.config.get('MAIL_SERVER') or '').strip()
+    mail_port = app.config.get('MAIL_PORT')
+    mail_username = (app.config.get('MAIL_USERNAME') or '').strip()
+    mail_password = (app.config.get('MAIL_PASSWORD') or '').strip()
+    mail_sender = (app.config.get('MAIL_DEFAULT_SENDER') or mail_username).strip()
+
+    # Gmail app passwords are often copied in a grouped format like
+    # "abcd efgh ijkl mnop"; SMTP requires the contiguous value.
+    if mail_server.lower() == 'smtp.gmail.com' and ' ' in mail_password:
+        mail_password = mail_password.replace(' ', '')
+
+    return {
+        'server': mail_server,
+        'port': mail_port,
+        'username': mail_username,
+        'password': mail_password,
+        'sender': mail_sender,
+    }
+
+
+def _send_smtp_message(message, recipient_email, purpose):
+    settings = _get_mail_settings()
+
+    if not settings['username'] or not settings['password'] or settings['username'] == 'your-email@gmail.com':
+        logger.warning(f"Email not configured. Cannot send {purpose} email to {recipient_email}.")
+        return False
+
+    message['From'] = settings['sender'] or settings['username']
+    message['To'] = recipient_email
+
+    timeout = 20
+    try:
+        if int(settings['port'] or 0) == 465:
+            with smtplib.SMTP_SSL(settings['server'], settings['port'], timeout=timeout, context=ssl.create_default_context()) as server:
+                server.login(settings['username'], settings['password'])
+                server.send_message(message)
+        else:
+            with smtplib.SMTP(settings['server'], settings['port'], timeout=timeout) as server:
+                server.ehlo()
+                server.starttls(context=ssl.create_default_context())
+                server.ehlo()
+                server.login(settings['username'], settings['password'])
+                server.send_message(message)
+
+        logger.info(f"{purpose.capitalize()} email sent to {recipient_email}")
+        return True
+    except smtplib.SMTPAuthenticationError as exc:
+        logger.error(f"SMTP authentication failed sending {purpose} email to {recipient_email}: {exc}")
+        return False
+    except smtplib.SMTPRecipientsRefused as exc:
+        logger.error(f"Recipient refused for {purpose} email to {recipient_email}: {exc}")
+        return False
+    except smtplib.SMTPException as exc:
+        logger.error(f"SMTP error sending {purpose} email to {recipient_email}: {exc}")
+        return False
+    except Exception as exc:
+        logger.error(f"Unexpected error sending {purpose} email to {recipient_email}: {exc}")
+        return False
+
+
 def send_reset_email(email, reset_token, first_name):
     """Send password reset link to user."""
     try:
-        mail_username = app.config.get('MAIL_USERNAME')
-        mail_password = app.config.get('MAIL_PASSWORD')
-
-        if not mail_username or not mail_password or mail_username == 'your-email@gmail.com':
-            logger.warning(f"Email not configured. Cannot send reset email to {email}.")
-            return False
-
         reset_link = url_for('reset_password', token=reset_token, _external=True)
 
         msg = MIMEMultipart('alternative')
         msg['Subject'] = 'Reset Your Password - CareerAI'
-        msg['From'] = app.config.get('MAIL_DEFAULT_SENDER')
-        msg['To'] = email
 
         html_content = f"""
         <html>
@@ -329,17 +382,7 @@ CareerAI Team
 
         msg.attach(MIMEText(text_content, 'plain'))
         msg.attach(MIMEText(html_content, 'html'))
-
-        server = smtplib.SMTP(app.config.get('MAIL_SERVER'), app.config.get('MAIL_PORT'))
-        server.starttls()
-        server.login(mail_username, mail_password)
-        server.send_message(msg)
-        server.quit()
-        logger.info(f"Password reset email sent to {email}")
-        return True
-    except smtplib.SMTPAuthenticationError:
-        logger.error("SMTP authentication failed sending reset email.")
-        return False
+        return _send_smtp_message(msg, email, 'password reset')
     except Exception as e:
         logger.error(f"Error sending reset email to {email}: {e}")
         return False
@@ -403,22 +446,12 @@ def _verify_email_otp(email, otp_code):
 def send_verification_email(email, verification_token, first_name, otp_code=None):
     """Send email verification link to user"""
     try:
-        # Check if email configuration is available
-        mail_username = app.config.get('MAIL_USERNAME')
-        mail_password = app.config.get('MAIL_PASSWORD')
-        
-        if not mail_username or not mail_password or mail_username == 'your-email@gmail.com':
-            logger.warning(f"Email not configured. Skipping email send for {email}. Token: {verification_token}")
-            return False
-        
         # Create verification link
-        verification_link = f"http://localhost:5000/verify-email/{verification_token}"
+        verification_link = url_for('verify_email', token=verification_token, _external=True)
         
         # Create email message
         msg = MIMEMultipart('alternative')
         msg['Subject'] = 'Verify Your Email - CareerAI'
-        msg['From'] = app.config.get('MAIL_DEFAULT_SENDER')
-        msg['To'] = email
         
         # HTML version of email
         html_content = f"""
@@ -480,22 +513,7 @@ def send_verification_email(email, verification_token, first_name, otp_code=None
         # Attach both versions
         msg.attach(MIMEText(text_content, 'plain'))
         msg.attach(MIMEText(html_content, 'html'))
-        
-        # Send email via SMTP
-        try:
-            server = smtplib.SMTP(app.config.get('MAIL_SERVER'), app.config.get('MAIL_PORT'))
-            server.starttls()
-            server.login(mail_username, mail_password)
-            server.send_message(msg)
-            server.quit()
-            logger.info(f"Verification email sent successfully to {email}")
-            return True
-        except smtplib.SMTPAuthenticationError:
-            logger.error(f"SMTP authentication failed. Check MAIL_USERNAME and MAIL_PASSWORD in .env")
-            return False
-        except smtplib.SMTPException as e:
-            logger.error(f"SMTP error sending email to {email}: {e}")
-            return False
+        return _send_smtp_message(msg, email, 'verification')
             
     except Exception as e:
         logger.error(f"Error sending verification email to {email}: {e}")
