@@ -856,12 +856,96 @@ DashboardModule.resetAnalysisOutputs = function() {
     this.state.allRecommendationsRaw = [];
     this.state.allLiveJobs = [];
     this.state.liveJobsSource = 'adzuna';
+    this.resetResearchMetrics();
 
     const filterPanel = document.getElementById('filterPanel');
     if (filterPanel) filterPanel.classList.add('d-none');
 
     const rerunBtn = document.getElementById('rerunAnalysisBtn');
     if (rerunBtn) rerunBtn.style.display = 'none';
+};
+
+DashboardModule.resetResearchMetrics = function() {
+    const cards = document.querySelectorAll('#researchMetricsCards .research-metric-value');
+    cards.forEach(node => {
+        node.textContent = '--';
+    });
+
+    const breakdown = document.getElementById('researchFairnessBreakdown');
+    if (breakdown) {
+        breakdown.textContent = 'Generate recommendations to see fairness and calibration breakdown.';
+    }
+};
+
+DashboardModule.updateResearchMetrics = function(recommendations) {
+    if (!Array.isArray(recommendations) || !recommendations.length) {
+        this.resetResearchMetrics();
+        return;
+    }
+
+    const coverageValues = [];
+    const confidenceValues = [];
+    const calibrationGaps = [];
+
+    const experienceBuckets = { entry: 0, mid: 0, senior: 0, unknown: 0 };
+    const industryBuckets = {};
+
+    recommendations.forEach(rec => {
+        const required = this.parseRequiredSkills(rec.required_skills);
+        const matched = Array.isArray(rec.matched_skills) ? rec.matched_skills : [];
+        const requiredCount = Math.max(1, required.length);
+        const overlap = matched.length / requiredCount;
+        coverageValues.push(overlap * 100);
+
+        const confidence = Number(rec.confidence);
+        const normalizedConfidence = Number.isFinite(confidence)
+            ? Math.max(0, Math.min(100, confidence))
+            : (overlap * 100);
+
+        confidenceValues.push(normalizedConfidence);
+        calibrationGaps.push(Math.abs(normalizedConfidence - overlap * 100));
+
+        const level = this.normalizeExperienceLevel(rec.experience_level || '');
+        if (!level) {
+            experienceBuckets.unknown += 1;
+        } else {
+            experienceBuckets[level] += 1;
+        }
+
+        const industry = this.normalizeIndustry(rec.industry || rec.job_title || rec.description || '') || 'technology';
+        industryBuckets[industry] = (industryBuckets[industry] || 0) + 1;
+    });
+
+    const avgCoverage = coverageValues.reduce((a, b) => a + b, 0) / coverageValues.length;
+    const avgConfidence = confidenceValues.reduce((a, b) => a + b, 0) / confidenceValues.length;
+    const meanCalibrationGap = calibrationGaps.reduce((a, b) => a + b, 0) / calibrationGaps.length;
+
+    const experienceShares = ['entry', 'mid', 'senior'].map(key => (experienceBuckets[key] / recommendations.length) * 100);
+    const fairnessSpread = Math.max(...experienceShares) - Math.min(...experienceShares);
+
+    const metricValues = document.querySelectorAll('#researchMetricsCards .research-metric-value');
+    if (metricValues[0]) metricValues[0].textContent = `${Math.round(avgCoverage)}%`;
+    if (metricValues[1]) metricValues[1].textContent = `${Math.round(meanCalibrationGap)}%`;
+    if (metricValues[2]) metricValues[2].textContent = `${Math.round(avgConfidence)}%`;
+    if (metricValues[3]) metricValues[3].textContent = `${Math.round(fairnessSpread)}%`;
+
+    const topIndustries = Object.entries(industryBuckets)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 3)
+        .map(([name, count]) => `${name} (${count})`)
+        .join(', ');
+
+    const breakdown = document.getElementById('researchFairnessBreakdown');
+    if (breakdown) {
+        breakdown.innerHTML = `
+            <strong>Fairness breakdown:</strong>
+            <ul>
+                <li>Experience exposure: Entry ${Math.round(experienceShares[0])}%, Mid ${Math.round(experienceShares[1])}%, Senior ${Math.round(experienceShares[2])}%.</li>
+                <li>Top industry exposure: ${topIndustries || 'No dominant industry.'}.</li>
+                <li>Calibration proxy: Lower gap indicates better confidence alignment with observed overlap.</li>
+            </ul>
+        `;
+    }
 };
 
 DashboardModule.updateExtractedSkillsPanel = function(skills) {
@@ -1143,6 +1227,7 @@ DashboardModule.submitProfileForAnalysis = function(profilePayload, userSkills) 
 
             if (data.recommendations && data.recommendations.length) {
                 this.renderRecommendations(data.recommendations, userSkills);
+                this.updateResearchMetrics(data.recommendations);
                 this.setProfileStatus('Recommendations ready');
             } else {
                 if (!data.data_message) {
@@ -1157,6 +1242,7 @@ DashboardModule.submitProfileForAnalysis = function(profilePayload, userSkills) 
                     title: 'No Relevant Live Jobs Yet',
                     subtitle: 'Run matching with more skills to load relevant live jobs.'
                 });
+                this.resetResearchMetrics();
                 return;
             }
 

@@ -378,6 +378,54 @@
     color: #183b63;
 }
 
+.research-metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 10px;
+}
+
+.research-metric-card {
+    border: 1px solid #d8e7f7;
+    border-radius: 12px;
+    padding: 12px;
+    background: linear-gradient(180deg, #f7fbff 0%, #eff6ff 100%);
+}
+
+.research-metric-label {
+    font-size: 0.78rem;
+    color: #496382;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.research-metric-value {
+    margin-top: 4px;
+    font-size: 1.18rem;
+    font-weight: 800;
+    color: #0d3d72;
+}
+
+.research-metric-note {
+    margin-top: 4px;
+    font-size: 0.8rem;
+    color: #5e738d;
+    line-height: 1.35;
+}
+
+.research-breakdown {
+    border: 1px dashed #c7dbf2;
+    border-radius: 10px;
+    padding: 10px 12px;
+    background: #fbfdff;
+    font-size: 0.9rem;
+    color: #334e6c;
+}
+
+.research-breakdown ul {
+    margin: 8px 0 0 18px;
+}
+
 .rubric-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));

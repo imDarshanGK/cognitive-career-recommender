@@ -388,6 +388,42 @@
                 <div id="recommendationsList" class="recommendations-grid d-none"></div>
             </section>
 
+            <section class="insight-grid" id="research-metrics">
+                <div class="section-header">
+                    <div>
+                        <h2>Research Metrics</h2>
+                        <p>Model quality indicators for overlap coverage, confidence calibration, and recommendation fairness.</p>
+                    </div>
+                </div>
+                <div class="panel-card">
+                    <div id="researchMetricsCards" class="research-metrics-grid">
+                        <div class="research-metric-card">
+                            <div class="research-metric-label">Skill Coverage</div>
+                            <div class="research-metric-value">--</div>
+                            <div class="research-metric-note">Average matched/required ratio across recommended roles.</div>
+                        </div>
+                        <div class="research-metric-card">
+                            <div class="research-metric-label">Calibration Gap</div>
+                            <div class="research-metric-value">--</div>
+                            <div class="research-metric-note">Mean absolute gap between confidence and observed overlap.</div>
+                        </div>
+                        <div class="research-metric-card">
+                            <div class="research-metric-label">Confidence Mean</div>
+                            <div class="research-metric-value">--</div>
+                            <div class="research-metric-note">Average confidence across currently ranked recommendations.</div>
+                        </div>
+                        <div class="research-metric-card">
+                            <div class="research-metric-label">Fairness Spread</div>
+                            <div class="research-metric-value">--</div>
+                            <div class="research-metric-note">Exposure disparity across experience groups (lower is better).</div>
+                        </div>
+                    </div>
+                    <div id="researchFairnessBreakdown" class="research-breakdown mt-3">
+                        Generate recommendations to see fairness and calibration breakdown.
+                    </div>
+                </div>
+            </section>
+
             <section class="insight-grid" id="live-market">
                 <div class="section-header">
                     <div>
