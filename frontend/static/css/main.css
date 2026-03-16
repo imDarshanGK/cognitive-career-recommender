@@ -53,6 +53,114 @@ html[data-bs-theme='dark'] a:hover {
     border-color: transparent;
 }
 
+.site-navbar {
+    background: rgba(255, 255, 255, 0.88) !important;
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+}
+
+.site-navbar-brand {
+    font-family: 'Space Grotesk', sans-serif;
+    color: #163b68 !important;
+    font-size: 1.4rem;
+}
+
+.site-navbar-brand i {
+    color: #1b74b8;
+}
+
+.site-nav-link {
+    color: #20364f !important;
+    font-weight: 600;
+}
+
+.site-nav-link:hover,
+.site-nav-link:focus {
+    color: #124a88 !important;
+}
+
+.site-navbar-toggler {
+    border-color: rgba(18, 74, 136, 0.18);
+}
+
+.site-theme-toggle {
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border-radius: 999px;
+    border: 1px solid #d4e1ee;
+    background: #ffffff;
+    color: #17385c;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 6px 16px rgba(18, 74, 136, 0.08);
+}
+
+.site-theme-toggle:hover {
+    background: #f6faff;
+    color: #124a88;
+}
+
+.site-signup-btn {
+    border-radius: 999px;
+    padding-inline: 0.95rem;
+}
+
+.site-dropdown-menu {
+    border: 1px solid rgba(18, 74, 136, 0.08);
+    box-shadow: 0 14px 30px rgba(15, 23, 42, 0.08);
+    border-radius: 14px;
+    padding: 0.55rem;
+}
+
+html[data-bs-theme='dark'] .site-navbar {
+    background: rgba(11, 18, 32, 0.88) !important;
+    border-bottom-color: rgba(71, 95, 130, 0.35);
+}
+
+html[data-bs-theme='dark'] .site-navbar-brand {
+    color: #e5eef9 !important;
+}
+
+html[data-bs-theme='dark'] .site-nav-link {
+    color: #d3deeb !important;
+}
+
+html[data-bs-theme='dark'] .site-nav-link:hover,
+html[data-bs-theme='dark'] .site-nav-link:focus {
+    color: #7ec1ff !important;
+}
+
+html[data-bs-theme='dark'] .site-theme-toggle {
+    background: #0f1b2f;
+    border-color: #30455f;
+    color: #dce8f7;
+}
+
+html[data-bs-theme='dark'] .site-theme-toggle:hover {
+    background: #13233a;
+    color: #92cfff;
+}
+
+html[data-bs-theme='dark'] .site-dropdown-menu {
+    background: #101a2b;
+    border-color: #2b3d56;
+    box-shadow: 0 18px 30px rgba(2, 8, 18, 0.48);
+}
+
+@media (max-width: 760px) {
+    .site-nav-link {
+        padding-inline: 0.35rem !important;
+    }
+
+    .site-theme-toggle {
+        width: 40px;
+        height: 40px;
+    }
+}
+
 .text-muted {
     color: var(--muted) !important;
 }

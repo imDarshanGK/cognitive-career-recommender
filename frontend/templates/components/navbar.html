@@ -1,14 +1,14 @@
 <!-- Main Navigation -->
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
+<nav class="navbar navbar-expand-lg site-navbar sticky-top">
     <div class="container">
         <!-- Brand -->
-        <a class="navbar-brand fw-bold" href="{{ url_for('index') }}">
-            <i class="fas fa-brain text-primary me-2"></i>
+        <a class="navbar-brand fw-bold site-navbar-brand" href="{{ url_for('index') }}">
+            <i class="fas fa-brain me-2"></i>
             CareerAI
         </a>
         
         <!-- Mobile Toggle -->
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <button class="navbar-toggler site-navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
             <span class="navbar-toggler-icon"></span>
         </button>
         
@@ -16,26 +16,26 @@
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav me-auto">
                 <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('index') }}">
+                    <a class="nav-link site-nav-link" href="{{ url_for('index') }}">
                         <i class="fas fa-home me-1"></i>Home
                     </a>
                 </li>
                 {% if session.get('user_id') %}
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('dashboard') }}">
+                        <a class="nav-link site-nav-link" href="{{ url_for('dashboard') }}">
                             <i class="fas fa-tachometer-alt me-1"></i>Dashboard
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('upload_resume') }}">
+                        <a class="nav-link site-nav-link" href="{{ url_for('upload_resume') }}">
                             <i class="fas fa-file-upload me-1"></i>Upload Resume
                         </a>
                     </li>
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                        <a class="nav-link dropdown-toggle site-nav-link" href="#" data-bs-toggle="dropdown">
                             <i class="fas fa-chart-line me-1"></i>AI Insights
                         </a>
-                        <ul class="dropdown-menu">
+                        <ul class="dropdown-menu site-dropdown-menu">
                             <li><a class="dropdown-item" href="{{ url_for('dashboard') }}#career-matches">Career Recommendations</a></li>
                             <li><a class="dropdown-item" href="{{ url_for('dashboard') }}#skill-gap">Skill Analysis</a></li>
                             <li><a class="dropdown-item" href="{{ url_for('dashboard') }}#live-market">Market Trends</a></li>
@@ -48,19 +48,19 @@
             <ul class="navbar-nav">
                 <!-- Theme Toggle -->
                 <li class="nav-item">
-                    <button type="button" id="theme-toggle" class="btn btn-light btn-lg me-2 shadow-sm" title="Toggle light/dark mode" aria-label="Toggle Theme" style="width: 48px; height: 48px; padding: 0; display: inline-flex !important; align-items: center; justify-content: center; border: 2px solid #6366f1; border-radius: 50%; box-shadow: 0 2px 8px rgba(99,102,241,0.10);">
-                        <i class="fas fa-moon" style="color: #333 !important; font-size: 22px; line-height: 1; display: inline-block;"></i>
+                    <button type="button" id="theme-toggle" class="btn site-theme-toggle me-2" title="Toggle light/dark mode" aria-label="Toggle Theme">
+                        <i class="fas fa-moon"></i>
                     </button>
                 </li>
                 
                 {% if session.get('user_id') %}
                     <!-- User Menu -->
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" data-bs-toggle="dropdown">
+                        <a class="nav-link dropdown-toggle d-flex align-items-center site-nav-link" href="#" data-bs-toggle="dropdown">
                             <i class="fas fa-user-circle me-2"></i>
                             {{ session.get('user_name', 'User') }}
                         </a>
-                        <ul class="dropdown-menu dropdown-menu-end">
+                        <ul class="dropdown-menu dropdown-menu-end site-dropdown-menu">
                             <li><a class="dropdown-item" href="{{ url_for('profile') }}">
                                 <i class="fas fa-user me-2"></i>Profile
                             </a></li>
@@ -73,12 +73,12 @@
                 {% else %}
                     <!-- Guest Menu -->
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('login') }}">
+                        <a class="nav-link site-nav-link" href="{{ url_for('login') }}">
                             <i class="fas fa-sign-in-alt me-1"></i>Login
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="btn btn-primary btn-sm ms-2" href="{{ url_for('register') }}">
+                        <a class="btn btn-primary btn-sm ms-2 site-signup-btn" href="{{ url_for('register') }}">
                             <i class="fas fa-user-plus me-1"></i>Sign Up
                         </a>
                     </li>

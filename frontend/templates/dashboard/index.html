@@ -125,13 +125,13 @@
                     </div>
                     <div class="hero-actions">
                         <button class="btn btn-primary hero-btn hero-btn-primary" id="getStartedBtn">
-                            <i class="fas fa-bolt me-2"></i>Generate Career Matches
+                            <i class="fas fa-bolt me-2"></i>Generate Matches
                         </button>
                         <a class="btn btn-outline-light hero-btn hero-btn-secondary" href="#input-modes">
-                            <i class="fas fa-arrow-down me-2"></i>Choose Input Mode
+                            <i class="fas fa-arrow-down me-2"></i>Choose Input
                         </a>
                         <button class="btn btn-outline-light hero-btn hero-btn-secondary" id="clearProfileBtn" type="button">
-                            <i class="fas fa-trash-alt me-2"></i>Clear Saved Profile
+                            <i class="fas fa-trash-alt me-2"></i>Clear Profile
                         </button>
                     </div>
                 </div>
@@ -218,7 +218,7 @@
                             </div>
                         </div>
                         <button class="btn btn-primary mt-3" type="submit" id="analyzeManualBtn">
-                            <i class="fas fa-flask me-2"></i>Run Manual Analysis
+                            <i class="fas fa-flask me-2"></i>Analyze Profile
                         </button>
                         <small class="d-block text-muted mt-2">Tip: include at least 3 skills for stronger matching quality.</small>
                     </form>
@@ -249,7 +249,7 @@
                     </div>
                     <div class="mt-3 d-flex gap-2 flex-wrap">
                         <button type="button" class="btn btn-primary btn-sm" id="voiceUseBtn">
-                            <i class="fas fa-wand-magic-sparkles me-2"></i>Extract Profile From Speech
+                            <i class="fas fa-wand-magic-sparkles me-2"></i>Extract Profile
                         </button>
                     </div>
                     <div id="voiceExtractionResult" class="mt-3 speech-result text-muted"></div>
@@ -273,7 +273,7 @@
                             <div class="d-flex gap-2 flex-wrap">
                                 <input type="text" id="interviewQuestion" class="form-control" placeholder="Generate role-specific question" style="min-width: 220px;">
                                 <button type="button" class="btn btn-outline-primary btn-sm" id="generateQuestionBtn">
-                                    <i class="fas fa-lightbulb me-2"></i>Generate
+                                    <i class="fas fa-lightbulb me-2"></i>Get Question
                                 </button>
                             </div>
                         </div>
@@ -284,10 +284,10 @@
                     </div>
                     <div class="mt-3 d-flex gap-2 flex-wrap">
                         <button type="button" class="btn btn-outline-secondary btn-sm" id="interviewVoiceBtn">
-                            <i class="fas fa-microphone me-2"></i>Voice Answer
+                            <i class="fas fa-microphone me-2"></i>Record Answer
                         </button>
                         <button type="button" class="btn btn-primary btn-sm" id="evaluateInterviewBtn">
-                            <i class="fas fa-chart-line me-2"></i>Evaluate Answer
+                            <i class="fas fa-chart-line me-2"></i>Evaluate Response
                         </button>
                     </div>
                     <div id="interviewResult" class="mt-3 speech-result text-muted"></div>
@@ -302,10 +302,10 @@
                     </div>
                     <div style="display: flex; gap: 8px;">
                         <button class="btn btn-outline-primary" id="rerunAnalysisBtn" style="display:none;">
-                            <i class="fas fa-sync-alt me-2"></i>Re-run Analysis
+                            <i class="fas fa-sync-alt me-2"></i>Refresh Analysis
                         </button>
                         <button class="btn btn-outline-primary" id="exploreBtn">
-                            <i class="fas fa-compass me-2"></i>Generate Recommendations
+                            <i class="fas fa-compass me-2"></i>Generate Results
                         </button>
                     </div>
                 </div>
@@ -391,7 +391,7 @@
                     <i class="fas fa-compass"></i>
                     <h6>No Career Matches Yet</h6>
                     <p>Add profile data and run analysis to generate personalized recommendations.</p>
-                    <a href="#input-modes" class="btn btn-primary btn-sm empty-state-action">Go to Input Modes</a>
+                    <a href="#input-modes" class="btn btn-primary btn-sm empty-state-action">Open Inputs</a>
                 </div>
                 <div id="recommendationsList" class="recommendations-grid d-none"></div>
             </section>
@@ -443,7 +443,7 @@
                     <i class="fas fa-bolt"></i>
                     <h6>Live Jobs Unavailable</h6>
                     <p>Live job data unavailable. Please refresh or try again later.</p>
-                    <button class="btn btn-outline-primary btn-sm empty-state-action" id="liveJobsCtaBtn">Retry Live Jobs</button>
+                    <button class="btn btn-outline-primary btn-sm empty-state-action" id="liveJobsCtaBtn">Refresh Live Jobs</button>
                 </div>
                 <div id="liveJobsList" class="recommendations-grid d-none"></div>
             </section>
