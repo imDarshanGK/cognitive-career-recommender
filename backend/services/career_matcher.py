@@ -254,6 +254,56 @@ def build_roadmap(missing_skills: List[str], max_items: int = 6) -> List[Dict[st
     return roadmap
 
 
+def _estimate_confidence(required: List[str], matched: List[str], demand_count: int, source: str = "adzuna") -> Dict[str, Any]:
+    required_count = max(1, len(required))
+    overlap_ratio = len(matched) / required_count
+    demand_score = min(1.0, float(max(0, demand_count)) / 8.0)
+    source_bonus = 0.1 if source == "adzuna" else 0.0
+
+    confidence = round((overlap_ratio * 0.65 + demand_score * 0.25 + source_bonus) * 100, 1)
+    confidence = max(20.0, min(95.0, confidence))
+
+    if confidence >= 75:
+        band = "high"
+    elif confidence >= 50:
+        band = "medium"
+    else:
+        band = "low"
+
+    margin = 8 if band == "high" else (12 if band == "medium" else 16)
+    lower = max(0.0, round(confidence - margin, 1))
+    upper = min(100.0, round(confidence + margin, 1))
+
+    return {
+        "score": confidence,
+        "band": band,
+        "range": [lower, upper],
+    }
+
+
+def _build_counterfactual(required: List[str], matched: List[str], base_score: float, max_suggestions: int = 2) -> Dict[str, Any]:
+    missing = [skill for skill in required if skill not in matched]
+    if not missing:
+        return {
+            "suggested_skills": [],
+            "estimated_score": round(float(base_score), 1),
+            "estimated_gain": 0.0,
+            "message": "You already cover the key skills for this role.",
+        }
+
+    suggested = missing[:max_suggestions]
+    gain_per_skill = 100.0 / max(1, len(required))
+    estimated_gain = round(min(35.0, gain_per_skill * len(suggested) * 0.9), 1)
+    estimated_score = round(min(100.0, float(base_score) + estimated_gain), 1)
+
+    return {
+        "suggested_skills": suggested,
+        "estimated_score": estimated_score,
+        "estimated_gain": estimated_gain,
+        "message": f"Learning {', '.join(suggested)} can raise this match by about +{estimated_gain}%.",
+    }
+
+
 def _aggregate_careers(matched_jobs: List[Dict[str, Any]], interests: List[str], user_skills: Set[str] = None) -> List[Dict[str, Any]]:
     by_title: Dict[str, Dict[str, Any]] = defaultdict(lambda: {
         "required_counter": Counter(),
@@ -322,6 +372,8 @@ def _aggregate_careers(matched_jobs: List[Dict[str, Any]], interests: List[str],
         depth_bonus = min(10.0, float(len(matched)) * 3.0) if len(matched) > 1 else 0.0
 
         final_score = min(100.0, round(score + title_bonus + depth_bonus, 2))
+        confidence = _estimate_confidence(required, matched, bucket["samples"], source="adzuna")
+        counterfactual = _build_counterfactual(required, matched, final_score)
 
         interest_hits = sum(1 for i in interests if _canonical_skill(i) in title_lower)
         dominant_location = bucket["location_counter"].most_common(1)[0][0] if bucket["location_counter"] else ""
@@ -333,9 +385,11 @@ def _aggregate_careers(matched_jobs: List[Dict[str, Any]], interests: List[str],
         explanation = [
             f"Matched {len(matched)} of {len(required)} core skills from live jobs.",
             f"Based on {bucket['samples']} current job postings.",
+            f"Confidence: {confidence['band'].title()} ({confidence['range'][0]}% - {confidence['range'][1]}%).",
         ]
         if title_bonus > 0:
             explanation.append(f"Your skills appear directly in the role title (+{int(title_bonus)} relevance boost).")
+        explanation.append(counterfactual["message"])
 
         careers.append(
             {
@@ -352,6 +406,10 @@ def _aggregate_careers(matched_jobs: List[Dict[str, Any]], interests: List[str],
                 "salary_max": salary_max,
                 "demand_count": bucket["samples"],
                 "interest_hits": interest_hits,
+                "confidence": confidence["score"],
+                "confidence_band": confidence["band"],
+                "confidence_range": confidence["range"],
+                "counterfactual": counterfactual,
                 "explanation": explanation,
             }
         )
@@ -437,15 +495,19 @@ def _fallback_catalog_match(profile: Dict[str, Any]) -> Dict[str, Any]:
         interest_hits = _role_interest_hits(role_title, profile["interests"])
         interest_bonus = min(15.0, float(interest_hits * 8))
         calibrated_score = min(100.0, float(scored["match_score"]) + interest_bonus)
+        confidence = _estimate_confidence(required, scored["matched_skills"], demand_count=1, source="local_catalog")
+        counterfactual = _build_counterfactual(required, scored["matched_skills"], calibrated_score)
 
         for skill in required:
             skill_counter[_canonical_skill(skill)] += 1
 
         explanation = [
             f"Matched {len(scored['matched_skills'])} of {len(required)} required skills from local role catalog.",
+            f"Confidence: {confidence['band'].title()} ({confidence['range'][0]}% - {confidence['range'][1]}%).",
         ]
         if interest_bonus > 0:
             explanation.append(f"Interest alignment contributed +{int(interest_bonus)} score.")
+        explanation.append(counterfactual["message"])
 
         recommendations.append(
             {
@@ -462,6 +524,10 @@ def _fallback_catalog_match(profile: Dict[str, Any]) -> Dict[str, Any]:
                 "salary_max": None,
                 "demand_count": 1,
                 "interest_hits": interest_hits,
+                "confidence": confidence["score"],
+                "confidence_band": confidence["band"],
+                "confidence_range": confidence["range"],
+                "counterfactual": counterfactual,
                 "explanation": explanation,
             }
         )

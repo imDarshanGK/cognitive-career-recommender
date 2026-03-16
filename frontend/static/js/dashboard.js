@@ -1489,6 +1489,10 @@ DashboardModule.renderRecommendations = function(recommendations, userSkills, op
                         <div class="match-score">
                             Match score <span class="score-pill">${scoreValue}%</span>
                         </div>
+                        <div class="small text-muted mt-1">
+                            Confidence: <strong>${String(rec.confidence_band || 'medium').toUpperCase()}</strong>
+                            ${Array.isArray(rec.confidence_range) ? `(${rec.confidence_range[0]}%-${rec.confidence_range[1]}%)` : ''}
+                        </div>
                     </div>
                     <i class="fas fa-briefcase text-primary"></i>
                 </div>
@@ -1503,6 +1507,7 @@ DashboardModule.renderRecommendations = function(recommendations, userSkills, op
                                 <li>${matching.length}/${required.length} required skills matched</li>
                                 <li>${missing.length} skills to prioritize learning</li>
                                 <li>${explanationLines[0] || 'Based on your profile match'}</li>
+                                ${rec.counterfactual && rec.counterfactual.message ? `<li>${rec.counterfactual.message}</li>` : ''}
                             </ul>
                         </div>
                     </div>
@@ -1527,6 +1532,15 @@ DashboardModule.renderRecommendations = function(recommendations, userSkills, op
                     <div class="small text-muted">Missing skills</div>
                     <div class="tag-list">${missing.length ? missing.map(skill => `<span class="tag-item missing">${skill}</span>`).join('') : '<span class="empty-list">None identified</span>'}</div>
                 </div>
+                ${rec.counterfactual && Array.isArray(rec.counterfactual.suggested_skills) && rec.counterfactual.suggested_skills.length ? `
+                <div style="margin-top: 10px; background: #f4fbff; border: 1px solid #d8ecff; border-radius: 10px; padding: 10px;">
+                    <div class="small text-muted">Counterfactual improvement</div>
+                    <div class="small">
+                        Learn <strong>${rec.counterfactual.suggested_skills.join(', ')}</strong>
+                        to target ~<strong>${Math.round(rec.counterfactual.estimated_score || scoreValue)}%</strong>
+                        (${Math.round(rec.counterfactual.estimated_gain || 0)}% gain)
+                    </div>
+                </div>` : ''}
                 <div class="recommendation-actions">
                     <button class="btn btn-sm btn-outline-success" data-feedback="like" data-role="${rec.job_title || ''}">Relevant</button>
                     <button class="btn btn-sm btn-outline-secondary" data-feedback="dislike" data-role="${rec.job_title || ''}">Not relevant</button>
