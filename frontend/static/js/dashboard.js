@@ -342,11 +342,23 @@ DashboardModule.setupNavigationEvents = function() {
         e.preventDefault();
         this.scrollToSection('manual-profile');
     });
+
+    // AI + Speech navigation
+    document.getElementById('aiUpgradesNav')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        this.scrollToSection('ai-upgrades');
+    });
     
     // Careers navigation
     document.getElementById('careersNav')?.addEventListener('click', (e) => {
         e.preventDefault();
         this.explorecareers();
+    });
+
+    // Research metrics navigation
+    document.getElementById('researchNav')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        this.scrollToSection('research-metrics');
     });
     
     // Skills navigation
@@ -1927,12 +1939,6 @@ DashboardModule.getPersonalizedRecommendations = function() {
     const formProfile = this.buildProfileFromCurrentForm();
     const effectiveProfile = this.mergeProfiles(this.state.lastProfile || {}, formProfile);
 
-    if (!this.state.hasSessionInput) {
-        this.showAlert('info', 'For fresh results, first upload a resume or click "Run Manual Analysis" in this session.');
-        this.scrollToSection('input-modes');
-        return;
-    }
-
     if (!this.hasMeaningfulProfile(effectiveProfile)) {
         this.showAlert('warning', 'Choose a resume or manual profile input first.');
         this.scrollToSection('input-modes');
@@ -1949,6 +1955,7 @@ DashboardModule.getPersonalizedRecommendations = function() {
 
     this.state.lastProfile = effectiveProfile;
     this.state.lastSkills = effectiveProfile.skills || [];
+    this.state.hasSessionInput = true;
     this.submitProfileForAnalysis(effectiveProfile, this.state.lastSkills);
 };
 
@@ -2153,22 +2160,25 @@ DashboardModule.loadUserData = function() {
             }
 
             const profile = data.profile;
+            const savedSkills = Array.isArray(profile.skills) ? profile.skills : [];
+            if (this.hasMeaningfulProfile(profile)) {
+                this.state.lastProfile = profile;
+                this.state.lastSkills = savedSkills;
+                this.state.hasSessionInput = true;
+                this.populateManualProfileForm(profile);
+                this.updateProfileCompletion(profile, 'saved');
+                this.setProfileStatus(savedSkills.length ? `Saved profile loaded (${savedSkills.length} skills)` : 'Saved profile loaded');
+                return;
+            }
 
-            // Keep saved profile informational only; do not auto-fill or surface snapshot metrics in hero.
             this.state.lastProfile = null;
             this.state.lastSkills = [];
             this.updateProfileCompletion({});
-
-            const savedSkills = Array.isArray(profile.skills) ? profile.skills : [];
-            if (savedSkills.length > 0) {
-                this.setProfileStatus('No active profile');
-            } else {
-                this.setProfileStatus('No active profile');
-                this.resetLiveJobsPanel({
-                    title: 'Live Jobs Not Loaded',
-                    subtitle: 'Complete your profile and run matching to load relevant live jobs.'
-                });
-            }
+            this.setProfileStatus('No profile');
+            this.resetLiveJobsPanel({
+                title: 'Live Jobs Not Loaded',
+                subtitle: 'Complete your profile and run matching to load relevant live jobs.'
+            });
         })
         .catch(error => {
             console.warn('Profile auto-load skipped:', error);

@@ -200,7 +200,7 @@
 .dashboard-main {
     position: relative;
     z-index: 1;
-    padding: 28px;
+    padding: 30px;
     overflow-x: hidden;
     max-width: 1480px;
 }
@@ -329,7 +329,7 @@
     background: var(--dash-surface);
     border: 1px solid var(--dash-border);
     border-radius: 16px;
-    padding: 18px;
+    padding: 20px;
     box-shadow: 0 12px 28px rgba(15, 23, 42, 0.06);
     transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
 }
@@ -349,14 +349,42 @@
 }
 
 .panel-header h3 {
-    font-size: 1.1rem;
+    font-size: 1.16rem;
     margin: 0 0 4px;
 }
 
 .panel-header p {
     margin: 0;
     color: var(--dash-muted);
-    font-size: 0.9rem;
+    font-size: 0.94rem;
+    line-height: 1.45;
+}
+
+.manual-form .form-label,
+#ai-interview-panel .form-label,
+#speech-profile-panel .form-label {
+    font-weight: 600;
+    color: #214263;
+}
+
+.manual-form .form-control,
+.manual-form .form-select,
+#ai-interview-panel .form-control,
+#speech-profile-panel .form-control {
+    border-color: #d2dfec;
+    min-height: 42px;
+}
+
+.manual-form .form-control::placeholder,
+#ai-interview-panel .form-control::placeholder,
+#speech-profile-panel .form-control::placeholder {
+    color: #8a9aaf;
+}
+
+.empty-state {
+    border: 1px dashed #d3e0ed;
+    border-radius: 14px;
+    background: #fbfdff;
 }
 
 .speech-actions-row {
