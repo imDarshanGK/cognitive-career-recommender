@@ -175,7 +175,38 @@ def generate_interview_question(role: str) -> Dict[str, Any]:
     }
 
 
-def evaluate_interview_answer(role: str, answer: str) -> Dict[str, Any]:
+def _build_personalized_learning_plan(target_keywords: List[str], missing_skills: List[str], matched_keywords: List[str]) -> List[str]:
+    missing_norm = [_canonical(skill) for skill in (missing_skills or []) if str(skill).strip()]
+    matched_norm = {_canonical(skill) for skill in (matched_keywords or [])}
+
+    priority = []
+    for keyword in target_keywords:
+        key = _canonical(keyword)
+        if key in matched_norm:
+            continue
+        if key in missing_norm:
+            priority.append(key)
+
+    for skill in missing_norm:
+        if skill not in priority:
+            priority.append(skill)
+
+    if not priority:
+        return [
+            "Practice one role-specific mock interview daily and refine STAR responses.",
+            "Add one measurable project impact metric to each answer.",
+        ]
+
+    top = priority[:3]
+    plan = []
+    for skill in top:
+        plan.append(f"Build one mini project showcasing {skill} and explain architecture in under 90 seconds.")
+
+    plan.append("Re-answer this interview question after completing the mini project demos.")
+    return plan
+
+
+def evaluate_interview_answer(role: str, answer: str, missing_skills: List[str] | None = None) -> Dict[str, Any]:
     role_key, target_keywords = _resolve_role(role)
     text = str(answer or "").strip()
 
@@ -244,6 +275,8 @@ def evaluate_interview_answer(role: str, answer: str) -> Dict[str, Any]:
     if not strengths:
         strengths.append("You attempted a complete response for the question.")
 
+    learning_plan = _build_personalized_learning_plan(target_keywords, missing_skills or [], coverage_hits)
+
     return {
         "success": True,
         "role": role_key,
@@ -257,5 +290,6 @@ def evaluate_interview_answer(role: str, answer: str) -> Dict[str, Any]:
         "matched_keywords": coverage_hits,
         "strengths": strengths,
         "improvements": improvements[:5],
+        "personalized_learning_plan": learning_plan,
         "word_count": word_count,
     }

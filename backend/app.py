@@ -1544,13 +1544,17 @@ def ai_interview_evaluate():
 
     role = str(payload.get('role', '')).strip()
     answer = str(payload.get('answer', '')).strip()
+    missing_skills = payload.get('missing_skills', [])
+
+    if not isinstance(missing_skills, list):
+        missing_skills = []
 
     if not role:
         return jsonify({'success': False, 'message': 'Role is required.'}), 400
     if not answer:
         return jsonify({'success': False, 'message': 'Answer is required.'}), 400
 
-    result = evaluate_interview_answer(role, answer)
+    result = evaluate_interview_answer(role, answer, missing_skills=missing_skills)
     status_code = 200 if result.get('success') else 400
     return jsonify(result), status_code
 

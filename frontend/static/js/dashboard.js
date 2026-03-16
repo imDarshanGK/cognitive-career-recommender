@@ -37,6 +37,7 @@ const DashboardModule = {
         currentUser: null,
         lastProfile: null,
         lastSkills: [],
+        lastSkillGap: [],
         allRecommendationsRaw: [],
         allRecommendations: [],
         allLiveJobs: [],
@@ -289,7 +290,11 @@ DashboardModule.evaluateInterviewAnswer = function() {
             'X-Requested-With': 'XMLHttpRequest',
             ...(csrfToken ? { 'X-CSRFToken': csrfToken } : {})
         },
-        body: JSON.stringify({ role, answer })
+        body: JSON.stringify({
+            role,
+            answer,
+            missing_skills: Array.isArray(this.state.lastSkillGap) ? this.state.lastSkillGap : []
+        })
     })
         .then(response => response.json())
         .then(data => {
@@ -300,6 +305,7 @@ DashboardModule.evaluateInterviewAnswer = function() {
             const rubric = data.rubric || {};
             const strengths = (data.strengths || []).map(item => `<li>${item}</li>`).join('');
             const improvements = (data.improvements || []).map(item => `<li>${item}</li>`).join('');
+            const nextPlan = (data.personalized_learning_plan || []).map(item => `<li>${item}</li>`).join('');
 
             if (resultEl) {
                 resultEl.innerHTML = `
@@ -312,6 +318,7 @@ DashboardModule.evaluateInterviewAnswer = function() {
                     </div>
                     <div class="mt-2"><strong>Strengths</strong><ul>${strengths || '<li>No major strengths detected yet.</li>'}</ul></div>
                     <div class="mt-2"><strong>Improve next</strong><ul>${improvements || '<li>Keep practicing with more measurable examples.</li>'}</ul></div>
+                    <div class="mt-2"><strong>Personalized next-step plan</strong><ul>${nextPlan || '<li>Generate recommendations first to build a targeted learning plan.</li>'}</ul></div>
                 `;
             }
 
@@ -856,6 +863,7 @@ DashboardModule.resetAnalysisOutputs = function() {
     this.state.allRecommendationsRaw = [];
     this.state.allLiveJobs = [];
     this.state.liveJobsSource = 'adzuna';
+    this.state.lastSkillGap = [];
     this.resetResearchMetrics();
 
     const filterPanel = document.getElementById('filterPanel');
@@ -1248,6 +1256,7 @@ DashboardModule.submitProfileForAnalysis = function(profilePayload, userSkills) 
 
             const roleGap = Array.isArray(data.skill_gap) ? data.skill_gap : [];
             const roleRoadmap = Array.isArray(data.roadmap) ? data.roadmap : [];
+            this.state.lastSkillGap = roleGap;
 
             this.updateSkillGapSummary(roleGap);
             this.updateRoadmap(roleRoadmap);
