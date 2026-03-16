@@ -217,6 +217,75 @@
                 </div>
             </section>
 
+            <section class="input-grid" id="ai-upgrades">
+                <div class="panel-card" id="speech-profile-panel">
+                    <div class="panel-header">
+                        <div>
+                            <h3>Speech Profile Assistant</h3>
+                            <p>Speak your skills, experience, and target role. We convert voice text to structured profile fields.</p>
+                        </div>
+                        <span class="panel-tag">Speech</span>
+                    </div>
+                    <div class="speech-actions-row">
+                        <button type="button" class="btn btn-outline-primary btn-sm" id="voiceStartBtn">
+                            <i class="fas fa-microphone me-2"></i>Start Listening
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" id="voiceStopBtn" disabled>
+                            <i class="fas fa-stop-circle me-2"></i>Stop
+                        </button>
+                        <small id="voiceStatusText" class="text-muted">Ready</small>
+                    </div>
+                    <div class="mt-3">
+                        <label class="form-label">Transcript</label>
+                        <textarea id="voiceTranscript" class="form-control" rows="4" placeholder="Example: I have 2 years experience in Python, SQL, and machine learning. I am interested in data scientist roles."></textarea>
+                    </div>
+                    <div class="mt-3 d-flex gap-2 flex-wrap">
+                        <button type="button" class="btn btn-primary btn-sm" id="voiceUseBtn">
+                            <i class="fas fa-wand-magic-sparkles me-2"></i>Extract Profile From Speech
+                        </button>
+                    </div>
+                    <div id="voiceExtractionResult" class="mt-3 speech-result text-muted"></div>
+                </div>
+
+                <div class="panel-card" id="ai-interview-panel">
+                    <div class="panel-header">
+                        <div>
+                            <h3>AI Interview Evaluator</h3>
+                            <p>Practice answers and receive rubric-based score, strengths, and targeted improvement actions.</p>
+                        </div>
+                        <span class="panel-tag">AI</span>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label">Target Role</label>
+                            <input type="text" id="interviewRole" class="form-control" placeholder="e.g., Data Scientist">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Interview Question</label>
+                            <div class="d-flex gap-2 flex-wrap">
+                                <input type="text" id="interviewQuestion" class="form-control" placeholder="Generate role-specific question" style="min-width: 220px;">
+                                <button type="button" class="btn btn-outline-primary btn-sm" id="generateQuestionBtn">
+                                    <i class="fas fa-lightbulb me-2"></i>Generate
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Your Answer</label>
+                            <textarea id="interviewAnswer" class="form-control" rows="4" placeholder="Speak or type your answer..."></textarea>
+                        </div>
+                    </div>
+                    <div class="mt-3 d-flex gap-2 flex-wrap">
+                        <button type="button" class="btn btn-outline-secondary btn-sm" id="interviewVoiceBtn">
+                            <i class="fas fa-microphone me-2"></i>Voice Answer
+                        </button>
+                        <button type="button" class="btn btn-primary btn-sm" id="evaluateInterviewBtn">
+                            <i class="fas fa-chart-line me-2"></i>Evaluate Answer
+                        </button>
+                    </div>
+                    <div id="interviewResult" class="mt-3 speech-result text-muted"></div>
+                </div>
+            </section>
+
             <section class="insight-grid" id="career-matches">
                 <div class="section-header">
                     <div>

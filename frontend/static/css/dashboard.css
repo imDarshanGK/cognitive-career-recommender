@@ -359,6 +359,42 @@
     font-size: 0.9rem;
 }
 
+.speech-actions-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.speech-result {
+    border: 1px dashed #c8d5e4;
+    border-radius: 10px;
+    padding: 10px 12px;
+    background: #f8fbff;
+    font-size: 0.9rem;
+}
+
+.speech-result strong {
+    color: #183b63;
+}
+
+.rubric-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.rubric-chip {
+    background: #eef6ff;
+    border: 1px solid #d4e6fb;
+    border-radius: 999px;
+    padding: 4px 10px;
+    font-size: 0.82rem;
+    color: #0f3f70;
+    font-weight: 600;
+}
+
 .panel-tag {
     background: #e7f5ff;
     color: #0d4f88;

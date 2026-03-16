@@ -34,6 +34,11 @@ from utils.data_processor import DataProcessor
 from config import Config
 from models import db, User, UserProfile, UserSkill
 from services.auth_service import AuthService
+from services.ai_upgrade import (
+    extract_profile_from_transcript,
+    generate_interview_question,
+    evaluate_interview_answer,
+)
 
 app = Flask(__name__,
             template_folder=os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'frontend', 'templates'),
@@ -1495,6 +1500,59 @@ def get_jobs_data():
     }
     jobs_data = data_processor.get_job_market_data(filters)
     return jsonify(jobs_data if jobs_data else {})
+
+
+@app.route('/api/speech/profile-extract', methods=['POST'])
+@db_login_required
+def speech_profile_extract():
+    """Convert spoken transcript into structured profile fields."""
+    try:
+        payload = request.get_json() or {}
+    except Exception:
+        return jsonify({'success': False, 'message': 'Invalid JSON data'}), 400
+
+    transcript = str(payload.get('transcript', '')).strip()
+    result = extract_profile_from_transcript(transcript)
+    status_code = 200 if result.get('success') else 400
+    return jsonify(result), status_code
+
+
+@app.route('/api/ai/interview-question', methods=['POST'])
+@db_login_required
+def ai_interview_question():
+    """Generate a role-specific interview question."""
+    try:
+        payload = request.get_json() or {}
+    except Exception:
+        return jsonify({'success': False, 'message': 'Invalid JSON data'}), 400
+
+    role = str(payload.get('role', '')).strip()
+    if not role:
+        return jsonify({'success': False, 'message': 'Role is required.'}), 400
+
+    return jsonify(generate_interview_question(role))
+
+
+@app.route('/api/ai/interview-evaluate', methods=['POST'])
+@db_login_required
+def ai_interview_evaluate():
+    """Evaluate interview answer with an explainable scoring rubric."""
+    try:
+        payload = request.get_json() or {}
+    except Exception:
+        return jsonify({'success': False, 'message': 'Invalid JSON data'}), 400
+
+    role = str(payload.get('role', '')).strip()
+    answer = str(payload.get('answer', '')).strip()
+
+    if not role:
+        return jsonify({'success': False, 'message': 'Role is required.'}), 400
+    if not answer:
+        return jsonify({'success': False, 'message': 'Answer is required.'}), 400
+
+    result = evaluate_interview_answer(role, answer)
+    status_code = 200 if result.get('success') else 400
+    return jsonify(result), status_code
 
 @app.errorhandler(404)
 def not_found_error(error):

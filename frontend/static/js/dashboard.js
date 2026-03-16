@@ -22,7 +22,10 @@ const DashboardModule = {
             clearProfile: '/api/profile/current',
             feedback: '/feedback',
             feedbackHistory: '/api/feedback',
-            liveJobs: '/api/jobs'
+            liveJobs: '/api/jobs',
+            speechProfileExtract: '/api/speech/profile-extract',
+            aiInterviewQuestion: '/api/ai/interview-question',
+            aiInterviewEvaluate: '/api/ai/interview-evaluate'
         }
     },
     
@@ -87,6 +90,237 @@ DashboardModule.setupEventListeners = function() {
     
     // Filter events
     this.setupFilterEvents();
+
+    // Advanced AI + Speech events
+    this.setupAdvancedFeatureEvents();
+};
+
+DashboardModule.setupAdvancedFeatureEvents = function() {
+    document.getElementById('voiceStartBtn')?.addEventListener('click', () => {
+        this.startSpeechCapture('voiceTranscript', 'voiceStatusText');
+    });
+
+    document.getElementById('voiceStopBtn')?.addEventListener('click', () => {
+        this.stopSpeechCapture('voiceStatusText');
+    });
+
+    document.getElementById('voiceUseBtn')?.addEventListener('click', () => {
+        this.extractProfileFromSpeech();
+    });
+
+    document.getElementById('interviewVoiceBtn')?.addEventListener('click', () => {
+        this.startSpeechCapture('interviewAnswer', null, { oneShot: true });
+    });
+
+    document.getElementById('generateQuestionBtn')?.addEventListener('click', () => {
+        this.generateInterviewQuestion();
+    });
+
+    document.getElementById('evaluateInterviewBtn')?.addEventListener('click', () => {
+        this.evaluateInterviewAnswer();
+    });
+};
+
+DashboardModule.startSpeechCapture = function(targetFieldId, statusFieldId, options = {}) {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const targetEl = document.getElementById(targetFieldId);
+    const statusEl = statusFieldId ? document.getElementById(statusFieldId) : null;
+    const startBtn = document.getElementById('voiceStartBtn');
+    const stopBtn = document.getElementById('voiceStopBtn');
+
+    if (!SpeechRecognition) {
+        this.showAlert('warning', 'Speech recognition is not supported in this browser. Please use Chrome or Edge.');
+        return;
+    }
+    if (!targetEl) return;
+
+    if (this._speechRecognition && this._speechActive) {
+        this._speechRecognition.stop();
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'en-US';
+    recognition.interimResults = true;
+    recognition.continuous = !options.oneShot;
+
+    let finalText = targetEl.value || '';
+
+    recognition.onstart = () => {
+        this._speechActive = true;
+        this._speechRecognition = recognition;
+        if (statusEl) statusEl.textContent = 'Listening...';
+        if (startBtn) startBtn.disabled = true;
+        if (stopBtn) stopBtn.disabled = false;
+    };
+
+    recognition.onresult = (event) => {
+        let interim = '';
+        for (let i = event.resultIndex; i < event.results.length; i += 1) {
+            const transcript = event.results[i][0].transcript;
+            if (event.results[i].isFinal) {
+                finalText = `${finalText} ${transcript}`.trim();
+            } else {
+                interim += transcript;
+            }
+        }
+        targetEl.value = `${finalText} ${interim}`.trim();
+    };
+
+    recognition.onerror = (event) => {
+        this._speechActive = false;
+        if (statusEl) statusEl.textContent = `Speech error: ${event.error}`;
+        if (startBtn) startBtn.disabled = false;
+        if (stopBtn) stopBtn.disabled = true;
+    };
+
+    recognition.onend = () => {
+        this._speechActive = false;
+        if (statusEl) statusEl.textContent = 'Ready';
+        if (startBtn) startBtn.disabled = false;
+        if (stopBtn) stopBtn.disabled = true;
+    };
+
+    recognition.start();
+};
+
+DashboardModule.stopSpeechCapture = function(statusFieldId) {
+    if (this._speechRecognition && this._speechActive) {
+        this._speechRecognition.stop();
+    }
+    const statusEl = statusFieldId ? document.getElementById(statusFieldId) : null;
+    if (statusEl) statusEl.textContent = 'Ready';
+};
+
+DashboardModule.extractProfileFromSpeech = function() {
+    const transcript = (document.getElementById('voiceTranscript')?.value || '').trim();
+    const resultEl = document.getElementById('voiceExtractionResult');
+
+    if (!transcript || transcript.length < 8) {
+        this.showAlert('warning', 'Please provide a longer speech transcript first.');
+        return;
+    }
+
+    const csrfToken = this.getCsrfToken();
+    fetch(this.config.apiEndpoints.speechProfileExtract, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+            ...(csrfToken ? { 'X-CSRFToken': csrfToken } : {})
+        },
+        body: JSON.stringify({ transcript })
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (!data.success || !data.structured_profile) {
+                throw new Error(data.message || 'Could not extract profile from speech.');
+            }
+
+            const profile = data.structured_profile;
+            this.populateManualProfileForm(profile);
+            const effective = this.mergeProfiles(profile, this.buildProfileFromCurrentForm());
+            this.state.lastProfile = effective;
+            this.state.lastSkills = effective.skills || [];
+            this.state.hasSessionInput = true;
+
+            const conf = Number(data.confidence || 0);
+            if (resultEl) {
+                resultEl.innerHTML = `<strong>Profile extracted (${conf}% confidence):</strong> ${
+                    (profile.skills || []).length
+                } skills, ${(profile.interests || []).length} interests.`;
+            }
+
+            this.showAlert('success', 'Speech profile extracted. Manual form auto-filled.');
+        })
+        .catch(error => {
+            if (resultEl) resultEl.textContent = error.message || 'Speech extraction failed.';
+            this.showAlert('error', error.message || 'Speech extraction failed.');
+        });
+};
+
+DashboardModule.generateInterviewQuestion = function() {
+    const role = (document.getElementById('interviewRole')?.value || '').trim();
+    if (!role) {
+        this.showAlert('warning', 'Please enter a target role first.');
+        return;
+    }
+
+    const csrfToken = this.getCsrfToken();
+    fetch(this.config.apiEndpoints.aiInterviewQuestion, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+            ...(csrfToken ? { 'X-CSRFToken': csrfToken } : {})
+        },
+        body: JSON.stringify({ role })
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (!data.success || !data.question) {
+                throw new Error(data.message || 'Could not generate question.');
+            }
+            const qEl = document.getElementById('interviewQuestion');
+            if (qEl) qEl.value = data.question;
+            this.showAlert('info', 'Interview question generated.');
+        })
+        .catch(error => this.showAlert('error', error.message || 'Question generation failed.'));
+};
+
+DashboardModule.evaluateInterviewAnswer = function() {
+    const role = (document.getElementById('interviewRole')?.value || '').trim();
+    const answer = (document.getElementById('interviewAnswer')?.value || '').trim();
+    const resultEl = document.getElementById('interviewResult');
+
+    if (!role) {
+        this.showAlert('warning', 'Enter target role first.');
+        return;
+    }
+    if (!answer) {
+        this.showAlert('warning', 'Please provide an interview answer.');
+        return;
+    }
+
+    const csrfToken = this.getCsrfToken();
+    fetch(this.config.apiEndpoints.aiInterviewEvaluate, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+            ...(csrfToken ? { 'X-CSRFToken': csrfToken } : {})
+        },
+        body: JSON.stringify({ role, answer })
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (!data.success) {
+                throw new Error(data.message || 'Interview evaluation failed.');
+            }
+
+            const rubric = data.rubric || {};
+            const strengths = (data.strengths || []).map(item => `<li>${item}</li>`).join('');
+            const improvements = (data.improvements || []).map(item => `<li>${item}</li>`).join('');
+
+            if (resultEl) {
+                resultEl.innerHTML = `
+                    <div><strong>Overall score:</strong> ${data.overall_score}%</div>
+                    <div class="rubric-grid">
+                        <span class="rubric-chip">Keyword: ${rubric.keyword_coverage || 0}%</span>
+                        <span class="rubric-chip">Structure: ${rubric.structure || 0}%</span>
+                        <span class="rubric-chip">Impact: ${rubric.impact || 0}%</span>
+                        <span class="rubric-chip">Communication: ${rubric.communication || 0}%</span>
+                    </div>
+                    <div class="mt-2"><strong>Strengths</strong><ul>${strengths || '<li>No major strengths detected yet.</li>'}</ul></div>
+                    <div class="mt-2"><strong>Improve next</strong><ul>${improvements || '<li>Keep practicing with more measurable examples.</li>'}</ul></div>
+                `;
+            }
+
+            this.showAlert('success', 'Interview answer evaluated successfully.');
+        })
+        .catch(error => {
+            if (resultEl) resultEl.textContent = error.message || 'Interview evaluation failed.';
+            this.showAlert('error', error.message || 'Interview evaluation failed.');
+        });
 };
 
 DashboardModule.setupNavigationEvents = function() {
