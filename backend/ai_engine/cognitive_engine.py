@@ -234,16 +234,22 @@ class CognitiveRecommendationEngine:
         return min(1.0, (skill_score + edu_score) / 2)
 
     def _vectorize_skills(self, skill_profile: Dict[str, float]) -> np.ndarray:
-        if not SKLEARN_AVAILABLE or self.skill_vectorizer is None:
-            return np.zeros(100)
-        
-        skills_text = ' '.join(skill_profile.keys())
+        # Try sentence embeddings if available, else TF-IDF
         try:
-            if hasattr(self.skill_vectorizer, 'vocabulary_'):
-                return self.skill_vectorizer.transform([skills_text]).toarray()[0]
-            return np.zeros(100)
+            from sentence_transformers import SentenceTransformer
+            model = SentenceTransformer('all-MiniLM-L6-v2')
+            skills_text = ' '.join(skill_profile.keys())
+            return model.encode([skills_text])[0]
         except Exception:
-            return np.zeros(100)
+            if not SKLEARN_AVAILABLE or self.skill_vectorizer is None:
+                return np.zeros(100)
+            skills_text = ' '.join(skill_profile.keys())
+            try:
+                if hasattr(self.skill_vectorizer, 'vocabulary_'):
+                    return self.skill_vectorizer.transform([skills_text]).toarray()[0]
+                return np.zeros(100)
+            except Exception:
+                return np.zeros(100)
 
     def _calculate_job_score(self, job: pd.Series, factors: Dict[str, Any]) -> float:
         title = job['job_title'].lower()
@@ -267,13 +273,42 @@ class CognitiveRecommendationEngine:
         return {'num_skills': len(understanding['skill_profile']), 'comp_score': understanding['competency_score']}
 
     def _calculate_skill_match_scores(self, features: Dict) -> Dict[str, float]:
-        return {'technical_roles': 0.8, 'managerial_roles': 0.6, 'creative_roles': 0.5}
+        # Use cosine similarity between user skill vector and job vectors
+        skill_vector = features.get('skill_vector', np.zeros(100))
+        scores = {'technical_roles': 0.0, 'managerial_roles': 0.0, 'creative_roles': 0.0}
+        if self.job_data is not None:
+            for _, job in self.job_data.iterrows():
+                job_skills = job['required_skills']
+                job_vec = self._vectorize_skills({s.strip():1.0 for s in job_skills.split(',')})
+                sim = float(np.dot(skill_vector, job_vec) / (np.linalg.norm(skill_vector) * np.linalg.norm(job_vec) + 1e-8))
+                title = job['job_title'].lower()
+                if 'manager' in title or 'lead' in title:
+                    scores['managerial_roles'] = max(scores['managerial_roles'], sim)
+                elif 'design' in title or 'ux' in title:
+                    scores['creative_roles'] = max(scores['creative_roles'], sim)
+                else:
+                    scores['technical_roles'] = max(scores['technical_roles'], sim)
+        return scores
 
     def _determine_career_progression(self, features: Dict) -> List[str]:
         return ['Senior Specialist', 'Team Lead']
 
     def _analyze_market_demand(self, features: Dict) -> Dict[str, float]:
-        return {'high_demand_roles': 0.85, 'traditional_roles': 0.6}
+        # Analyze demand from job dataset
+        demand = {'high_demand_roles': 0.0, 'traditional_roles': 0.0}
+        if self.job_data is not None:
+            for _, job in self.job_data.iterrows():
+                job_skills = job['required_skills']
+                for s in features.get('skill_profile', {}):
+                    if s in job_skills.lower():
+                        demand['high_demand_roles'] += 1
+                    else:
+                        demand['traditional_roles'] += 1
+            total = demand['high_demand_roles'] + demand['traditional_roles']
+            if total > 0:
+                demand['high_demand_roles'] /= total
+                demand['traditional_roles'] /= total
+        return demand
 
     def _assess_growth_potential(self, features: Dict) -> Dict[str, float]:
         return {'salary_growth': 0.8, 'skill_expansion': 0.9}
@@ -282,10 +317,20 @@ class CognitiveRecommendationEngine:
         return f"Matched {rec['job_title']} at {rec['match_score']*100}% based on your expertise."
 
     def _explain_skill_match(self, rec: Dict, factors: Dict) -> Dict[str, Any]:
-        return {'matching': ['Core Skills'], 'gaps': ['Specialized Tools']}
+        # Show matched and missing skills
+        required = [s.strip() for s in rec['required_skills'].split(',')]
+        user_skills = factors.get('user_features', {}).get('skills', [])
+        matching = [s for s in required if s.lower() in [k.lower() for k in user_skills]]
+        gaps = [s for s in required if s.lower() not in [k.lower() for k in user_skills]]
+        return {'matching': matching, 'gaps': gaps}
 
     def _explain_growth_potential(self, rec: Dict, factors: Dict) -> Dict[str, Any]:
         return {'potential': 'High', 'path': 'Vertical'}
 
     def _generate_improvement_suggestions(self, rec: Dict, factors: Dict) -> List[str]:
-        return ['Certify in relevant cloud technologies', 'Update portfolio']
+        # Skill gap ranking
+        gaps = self._explain_skill_match(rec, factors)['gaps']
+        suggestions = [f'Learn or certify: {g}' for g in gaps]
+        if not suggestions:
+            suggestions.append('Update portfolio and apply to more roles')
+        return suggestions

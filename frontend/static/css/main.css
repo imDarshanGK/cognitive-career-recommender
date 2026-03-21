@@ -5,64 +5,94 @@
     --muted: #64748b;
     --surface: #ffffff;
     --bg: #f5f7fa;
-}
-
-html[data-bs-theme='dark'] {
-    --primary: #6ea8fe;
-    --secondary: #4fd1c5;
-    --text: #e5e7eb;
+    --primary: #2563eb;
+    --secondary: #06b6d4;
+    --accent: #f59e42;
+    --text: #1e293b;
+    --muted: #64748b;
+    --surface: #ffffff;
+    --bg: #f3f4f6;
+    --success: #22c55e;
+    --danger: #ef4444;
+    --warning: #facc15;
+    --info: #3b82f6;
+    --shadow: 0 8px 32px rgba(16,34,63,0.10);
+    --radius: 16px;
     --muted: #9ca3af;
     --surface: #111827;
-    --bg: #0b1220;
-}
-
-html, body {
-    margin: 0;
-    padding: 0;
-    font-family: 'Work Sans', sans-serif;
+html[data-bs-theme='dark'] {
+    --primary: #60a5fa;
+    --secondary: #22d3ee;
+    --accent: #fbbf24;
+    --text: #e5e7eb;
+    --muted: #9ca3af;
+    --surface: #1e293b;
+    --bg: #0f172a;
+    --success: #4ade80;
+    --danger: #f87171;
+    --warning: #fde68a;
+    --info: #93c5fd;
+    --shadow: 0 8px 32px rgba(30,41,59,0.16);
+    --radius: 16px;
     color: var(--text);
     background: var(--bg);
     transition: background-color 0.2s ease, color 0.2s ease;
-}
-
-a {
-    color: var(--primary);
-}
-
+    margin: 0;
+    padding: 0;
+    font-family: 'Work Sans', 'Space Grotesk', sans-serif;
+    color: var(--text);
+    background: var(--bg);
+    transition: background-color 0.3s cubic-bezier(0.42,0,0.58,1), color 0.3s cubic-bezier(0.42,0,0.58,1);
+    min-height: 100vh;
 a:hover {
     color: #143257;
+/* Links */
+a {
+    color: var(--primary);
+    text-decoration: none;
+    transition: color 0.2s;
 }
-
+a:hover {
+    color: var(--accent);
+    text-decoration: underline;
+}
 html[data-bs-theme='dark'] a:hover {
-    color: #93c5fd;
-}
+    color: var(--accent);
 
+.btn-primary {
+/* Alerts */
 .alert-container,
 .auth-card-body .alert {
     margin-bottom: 1rem;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
 }
 
+/* Buttons */
 .btn-primary {
-    background: linear-gradient(135deg, var(--primary), #275395);
-    border-color: transparent;
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    border: none;
+    color: #fff;
+    font-weight: 600;
+    border-radius: var(--radius);
+    box-shadow: 0 2px 8px rgba(37,99,235,0.12);
+    transition: background 0.22s cubic-bezier(0.42,0,0.58,1),
+        box-shadow 0.22s cubic-bezier(0.42,0,0.58,1);
 }
-
 .btn-primary:hover,
 .btn-primary:focus {
-    background: linear-gradient(135deg, #143257, #1f4c88);
-    border-color: transparent;
+    background: linear-gradient(135deg, var(--secondary), var(--primary));
+    color: #fff;
+    box-shadow: 0 4px 16px rgba(37,99,235,0.16);
 }
-
 .btn-outline-primary {
     color: var(--primary);
     border: 2px solid var(--primary);
+    border-radius: var(--radius);
+    background: transparent;
+    font-weight: 600;
     transition: box-shadow 0.22s cubic-bezier(0.42,0,0.58,1),
-        background 0.22s cubic-bezier(0.42,0,0.58,1),
-        color 0.22s cubic-bezier(0.42,0,0.58,1),
-        transform 0.18s cubic-bezier(0.42,0,0.58,1);
-}
-.btn-outline-primary:hover,
-.btn-outline-primary:focus {
+        background 0.22s cubic-bezier(0.42,0,0.58,1);
     box-shadow: 0 8px 18px rgba(21, 166, 160, 0.18);
     background: #eaf7fa;
     color: var(--primary);
@@ -70,6 +100,34 @@ html[data-bs-theme='dark'] a:hover {
 }
 
 .site-navbar {
+    @media (max-width: 768px) {
+        .site-navbar {
+            padding: 0.5rem 0.5rem;
+        }
+        .site-navbar-brand {
+            font-size: 1.1rem;
+        }
+        .site-nav-link {
+            font-size: 1rem;
+            padding: 0.5rem 0.7rem;
+        }
+        .site-theme-toggle {
+            width: 36px;
+            height: 36px;
+        }
+        .dashboard-main, .dashboard-section {
+            padding: 12px 6px !important;
+        }
+        .dashboard-title {
+            font-size: 1.1rem !important;
+        }
+        .dashboard-card {
+            padding: 10px 8px !important;
+        }
+        .panel-card {
+            padding: 10px 8px !important;
+        }
+    }
     background: rgba(255, 255, 255, 0.88) !important;
     backdrop-filter: blur(10px);
     border-bottom: 1px solid rgba(15, 23, 42, 0.08);

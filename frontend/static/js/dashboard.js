@@ -58,6 +58,232 @@ const DashboardModule = {
         this.initializeFileUpload();
         this.setupScrollAnimations();
         this.loadUserData();
+        this.showOnboardingTooltip();
+        this.setupThemeToggleIcon();
+        this.loadAISuggestions();
+        this.loadProfileAnalytics();
+        this.loadSkillGapAnalytics();
+        this.loadExplainableOutput();
+        this.loadSkillDemandAnalytics();
+                        // Load Explainable Output
+                        loadExplainableOutput: function() {
+                            const panel = document.getElementById('explainableOutputPanel');
+                            if (!panel) return;
+                            fetch('/api/recommendations', {
+                                method: 'GET',
+                                headers: {
+                                    'X-CSRFToken': this.getCsrfToken(),
+                                    'Accept': 'application/json'
+                                }
+                            })
+                            .then(res => res.json())
+                            .then(data => {
+                                if (!data.explanations) {
+                                    panel.innerHTML = '<div class="text-muted">No explainable output available. Run analysis to see details.</div>';
+                                    return;
+                                }
+                                let html = '';
+                                Object.entries(data.explanations).forEach(([job, exp]) => {
+                                    html += `<div class="explainable-card mb-3">
+                                        <h5>${job}</h5>
+                                        <div><strong>Why recommended:</strong> ${exp.why_recommended}</div>
+                                        <div><strong>Matched skills:</strong> ${exp.skill_analysis.matching.join(', ') || '--'}</div>
+                                        <div><strong>Missing skills:</strong> ${exp.skill_analysis.gaps.join(', ') || '--'}</div>
+                                        <div><strong>Confidence:</strong> ${exp.growth_opportunities.potential || '--'}</div>
+                                        <div><strong>Improvement suggestions:</strong> ${exp.improvement_suggestions.join(', ')}</div>
+                                    </div>`;
+                                });
+                                panel.innerHTML = html;
+                            })
+                            .catch(() => {
+                                panel.innerHTML = '<div class="text-danger">Failed to load explainable output. Try again later.</div>';
+                            });
+                        },
+
+                        // Load Skill Demand Analytics
+                        loadSkillDemandAnalytics: function() {
+                            const panel = document.getElementById('skillDemandPanel');
+                            if (!panel) return;
+                            fetch('/api/skill-demand', {
+                                method: 'GET',
+                                headers: {
+                                    'X-CSRFToken': this.getCsrfToken(),
+                                    'Accept': 'application/json'
+                                }
+                            })
+                            .then(res => res.json())
+                            .then(data => {
+                                if (!data.demand) {
+                                    panel.innerHTML = '<div class="text-muted">No skill demand analytics available. Run analysis to see details.</div>';
+                                    return;
+                                }
+                                panel.innerHTML = `<div class="mb-2">High Demand Roles: <strong>${Math.round(data.demand.high_demand_roles * 100)}%</strong></div>
+                                    <div class="mb-2">Traditional Roles: <strong>${Math.round(data.demand.traditional_roles * 100)}%</strong></div>
+                                    <div class="mb-2">Career Prediction: <strong>${data.prediction || '--'}</strong></div>
+                                    <div class="mb-2">Confidence Score: <strong>${data.confidence || '--'}</strong></div>`;
+                            })
+                            .catch(() => {
+                                panel.innerHTML = '<div class="text-danger">Failed to load skill demand analytics. Try again later.</div>';
+                            });
+                        },
+                    // Load Profile Completion Analytics
+                    loadProfileAnalytics: function() {
+                        const panel = document.getElementById('profile-analytics-content');
+                        if (!panel) return;
+                        fetch('/api/profile/current', {
+                            method: 'GET',
+                            headers: {
+                                'X-CSRFToken': this.getCsrfToken(),
+                                'Accept': 'application/json'
+                            }
+                        })
+                        .then(res => res.json())
+                        .then(data => {
+                            if (!data.has_profile || !data.profile) {
+                                panel.innerHTML = '<div class="text-muted">No profile found. Upload your resume or build your profile to see analytics.</div>';
+                                return;
+                            }
+                            let completion = 0;
+                            if (data.profile.education && data.profile.education.degrees && data.profile.education.degrees.length) completion += 25;
+                            if (data.profile.experience && data.profile.experience.length && data.profile.experience[0].years > 0) completion += 25;
+                            if (data.profile.skills && data.profile.skills.length) completion += 35;
+                            if (data.profile.interests && data.profile.interests.length) completion += 15;
+                            completion = Math.min(100, completion);
+                            panel.innerHTML = `<div class="mb-2">Profile Completion: <strong>${completion}%</strong></div>
+                                <div class="progress" style="height: 8px;">
+                                    <div class="progress-bar bg-success" role="progressbar" style="width: ${completion}%" aria-valuenow="${completion}" aria-valuemin="0" aria-valuemax="100"></div>
+                                </div>
+                                <small class="text-muted">Education, experience, skills, and interests contribute to completion.</small>`;
+                        })
+                        .catch(() => {
+                            panel.innerHTML = '<div class="text-danger">Failed to load profile analytics. Try again later.</div>';
+                        });
+                    },
+
+                    // Load Skill Gap Analytics
+                    loadSkillGapAnalytics: function() {
+                        const panel = document.getElementById('skill-gap-analytics-content');
+                        if (!panel) return;
+                        fetch('/api/profile/current', {
+                            method: 'GET',
+                            headers: {
+                                'X-CSRFToken': this.getCsrfToken(),
+                                'Accept': 'application/json'
+                            }
+                        })
+                        .then(res => res.json())
+                        .then(data => {
+                            if (!data.has_profile || !data.profile) {
+                                panel.innerHTML = '<div class="text-muted">No profile found. Upload your resume or build your profile to see skill gap insights.</div>';
+                                return;
+                            }
+                            fetch('/analyze_profile', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRFToken': this.getCsrfToken(),
+                                    'Accept': 'application/json'
+                                },
+                                body: JSON.stringify(data.profile)
+                            })
+                            .then(res => res.json())
+                            .then(result => {
+                                if (!result.skill_gap || result.skill_gap.length === 0) {
+                                    panel.innerHTML = '<div class="text-muted">No skill gaps detected. Your profile covers all key areas.</div>';
+                                    return;
+                                }
+                                let html = '<ul class="list-group">';
+                                result.skill_gap.forEach(skill => {
+                                    html += `<li class="list-group-item"><i class="fas fa-exclamation-circle text-warning me-2"></i>${skill}</li>`;
+                                });
+                                html += '</ul>';
+                                panel.innerHTML = html;
+                            })
+                            .catch(() => {
+                                panel.innerHTML = '<div class="text-danger">Failed to load skill gap insights. Try again later.</div>';
+                            });
+                        })
+                        .catch(() => {
+                            panel.innerHTML = '<div class="text-danger">Failed to load profile. Try again later.</div>';
+                        });
+                    },
+                // Load AI Suggestions
+                loadAISuggestions: function() {
+                    const panel = document.getElementById('ai-suggestions-content');
+                    if (!panel) return;
+                    fetch('/api/profile/current', {
+                        method: 'GET',
+                        headers: {
+                            'X-CSRFToken': this.getCsrfToken(),
+                            'Accept': 'application/json'
+                        }
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (!data.has_profile || !data.profile) {
+                            panel.innerHTML = '<div class="text-muted">No profile found. Upload your resume or build your profile to get AI suggestions.</div>';
+                            return;
+                        }
+                        fetch('/analyze_profile', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': this.getCsrfToken(),
+                                'Accept': 'application/json'
+                            },
+                            body: JSON.stringify(data.profile)
+                        })
+                        .then(res => res.json())
+                        .then(result => {
+                            if (!result.recommendations || result.recommendations.length === 0) {
+                                panel.innerHTML = '<div class="text-muted">No recommendations found. Add more skills or interests for better matches.</div>';
+                                return;
+                            }
+                            let html = '<ul class="list-group">';
+                            result.recommendations.forEach(rec => {
+                                html += `<li class="list-group-item">
+                                    <div class="fw-bold"><i class="fas fa-briefcase me-2"></i>${rec.job_title}</div>
+                                    <div class="small text-muted">Match Score: ${rec.match_score}% | Confidence: ${rec.confidence_band}</div>
+                                    <div class="mt-1">${rec.explanation.join('<br>')}</div>
+                                </li>`;
+                            });
+                            html += '</ul>';
+                            panel.innerHTML = html;
+                        })
+                        .catch(() => {
+                            panel.innerHTML = '<div class="text-danger">Failed to load AI suggestions. Try again later.</div>';
+                        });
+                    })
+                    .catch(() => {
+                        panel.innerHTML = '<div class="text-danger">Failed to load profile. Try again later.</div>';
+                    });
+                },
+            // Show onboarding tooltip
+            showOnboardingTooltip: function() {
+                const tooltip = document.getElementById('onboarding-tooltip');
+                if (tooltip) {
+                    setTimeout(() => {
+                        tooltip.style.display = 'block';
+                    }, 800);
+                    setTimeout(() => {
+                        tooltip.style.display = 'none';
+                    }, 9000);
+                }
+            },
+
+            // Theme toggle icon feedback
+            setupThemeToggleIcon: function() {
+                const themeToggle = document.getElementById('theme-toggle');
+                const themeIcon = document.getElementById('theme-icon');
+                if (themeToggle && themeIcon) {
+                    themeToggle.addEventListener('click', () => {
+                        const html = document.documentElement;
+                        const isDark = html.getAttribute('data-bs-theme') === 'dark';
+                        themeIcon.classList.toggle('fa-moon', !isDark);
+                        themeIcon.classList.toggle('fa-sun', isDark);
+                    });
+                }
+            },
         this.loadFeedbackHistory();
         // Keep live jobs empty until user has a meaningful profile context.
         this.resetLiveJobsPanel({
@@ -2046,20 +2272,19 @@ DashboardModule.showAlert = function(type, message) {
         return;
     }
     
-    // Create alert element
+    // Create alert element with unique id
+    const alertId = 'alert-' + Date.now() + '-' + Math.floor(Math.random() * 10000);
     const alertHTML = `
-        <div class="alert alert-${type === 'error' ? 'danger' : type} alert-dismissible fade show notification-slide-in" role="alert" style="position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 300px;">
+        <div id="${alertId}" class="alert alert-${type === 'error' ? 'danger' : type} alert-dismissible fade show notification-slide-in" role="alert" style="position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 300px;">
             <i class="fas fa-${this.getAlertIcon(type)} me-2"></i>
             ${message}
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
     `;
-    
     document.body.insertAdjacentHTML('beforeend', alertHTML);
-    
     // Auto remove after 5 seconds
     setTimeout(() => {
-        const alert = document.querySelector('.alert:last-of-type');
+        const alert = document.getElementById(alertId);
         if (alert) {
             alert.classList.add('notification-slide-out');
             setTimeout(() => alert.remove(), 400);

@@ -45,19 +45,34 @@
     </style>
 </head>
 <body class="dashboard-body">
+    <!-- Onboarding Tooltip -->
+    <div id="onboarding-tooltip" class="position-fixed top-0 end-0 p-3" style="z-index: 1050;">
+        <div class="toast show onboarding-toast" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header">
+                <i class="fas fa-lightbulb me-2 text-warning"></i>
+                <strong class="me-auto">Welcome to CareerAI!</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="toast-body">
+                Explore your personalized dashboard.<br>
+                <ul class="mb-0 ps-3">
+                    <li>Upload your resume for instant skill analysis</li>
+                    <li>Get AI-powered career recommendations</li>
+                    <li>Track your progress and skill gaps</li>
+                    <li>Bookmark jobs and practice interviews</li>
+                </ul>
+            </div>
+        </div>
+    </div>
     <div class="dashboard-shell">
         <aside class="dashboard-sidebar">
             <div class="sidebar-brand">
                 <div class="brand-mark"><i class="fas fa-brain"></i></div>
-                <div class="dashboard-shell">
-                    <aside class="dashboard-sidebar">
-                        <div class="sidebar-brand">
-                            <div class="brand-mark"><i class="fas fa-brain"></i></div>
-                            <div>
-                                <div class="brand-title">CareerAI</div>
-                                <div class="brand-subtitle">Skill-Based Matching</div>
-                            </div>
-                            <button type="button" id="theme-toggle" class="btn btn-sm dashboard-theme-toggle ms-auto" title="Toggle Theme" aria-label="Toggle Theme">
+                <div>
+                    <div class="brand-title">CareerAI</div>
+                    <div class="brand-subtitle">Skill-Based Matching</div>
+                </div>
+                <button type="button" id="theme-toggle" class="btn btn-sm dashboard-theme-toggle ms-auto" title="Toggle Theme" aria-label="Toggle Theme">
                                 <i class="fas fa-moon"></i>
                             </button>
                         </div>
@@ -108,6 +123,33 @@
                     </aside>
 
                     <main class="dashboard-main fade-in">
+                                                <!-- Profile Completion Analytics Widget -->
+                                                <section class="dashboard-section" id="profile-analytics">
+                                                    <div class="dashboard-title" role="heading" aria-level="2">
+                                                        <i class="fas fa-user-check me-2" aria-hidden="true"></i>Profile Completion Analytics
+                                                    </div>
+                                                    <div id="profile-analytics-content" role="region" aria-label="Profile Completion Analytics">
+                                                        <div class="text-muted">Loading profile analytics...</div>
+                                                    </div>
+                                                </section>
+                                                <!-- Skill Gap Visualization Widget -->
+                                                <section class="dashboard-section" id="skill-gap-analytics">
+                                                    <div class="dashboard-title" role="heading" aria-level="2">
+                                                        <i class="fas fa-chart-bar me-2" aria-hidden="true"></i>Skill Gap Visualization
+                                                    </div>
+                                                    <div id="skill-gap-analytics-content" role="region" aria-label="Skill Gap Visualization">
+                                                        <div class="text-muted">Loading skill gap insights...</div>
+                                                    </div>
+                                                </section>
+                        <!-- AI Suggestions Widget -->
+                        <section class="dashboard-section" id="ai-suggestions">
+                            <div class="dashboard-title" role="heading" aria-level="2">
+                                <i class="fas fa-robot me-2" aria-hidden="true"></i>AI Career Suggestions
+                            </div>
+                            <div id="ai-suggestions-content" role="region" aria-label="AI Career Suggestions">
+                                <div class="text-muted">Loading personalized recommendations...</div>
+                            </div>
+                        </section>
                         <section class="dashboard-section">
                             <div class="dashboard-title">Welcome to CareerAI Dashboard</div>
                             <div class="dashboard-card">
@@ -408,6 +450,32 @@
                     <a href="#input-modes" class="btn btn-primary btn-sm empty-state-action">Open Inputs</a>
                 </div>
                 <div id="recommendationsList" class="recommendations-grid d-none"></div>
+            </section>
+            <section class="insight-grid" id="explainable-output">
+                <div class="section-header">
+                    <div>
+                        <h2>Explainable Output</h2>
+                        <p>See matched skills, missing skills, confidence, and improvement suggestions for each recommendation.</p>
+                    </div>
+                </div>
+                <div class="panel-card">
+                    <div id="explainableOutputPanel">
+                        <!-- Populated by dashboard.js -->
+                    </div>
+                </div>
+            </section>
+            <section class="insight-grid" id="skill-demand-analytics">
+                <div class="section-header">
+                    <div>
+                        <h2>Skill Demand Analytics</h2>
+                        <p>Live market demand for your skills, with career prediction and confidence scoring.</p>
+                    </div>
+                </div>
+                <div class="panel-card">
+                    <div id="skillDemandPanel">
+                        <!-- Populated by dashboard.js -->
+                    </div>
+                </div>
             </section>
 
             <section class="insight-grid" id="research-metrics">
