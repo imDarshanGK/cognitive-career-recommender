@@ -363,14 +363,32 @@ CognitiveCareerAI.showAlert = function(type, message, options = {}) {
         }
     });
     
+    const borderColors = {
+        success: '#22c55e',
+        error: '#ef4444',
+        warning: '#facc15',
+        info: '#3b82f6'
+    };
+    const iconBg = {
+        success: 'rgba(34,197,94,0.12)',
+        error: 'rgba(239,68,68,0.12)',
+        warning: 'rgba(250,204,21,0.12)',
+        info: 'rgba(59,130,246,0.12)'
+    };
     const alertHTML = `
-        <div class="alert alert-${type === 'error' ? 'danger' : type} alert-dismissible fade show" role="alert" id="${alertId}">
-            <i class="fas fa-${this.getAlertIcon(type)} me-2"></i>
-            <strong>${this.getAlertTitle(type)}</strong> ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        <div class="modern-alert toast-animate" id="${alertId}" role="alert" style="
+            border-left: 6px solid ${borderColors[type] || borderColors.info};
+            box-shadow: 0 8px 32px rgba(16,34,63,0.18);
+            background: rgba(255,255,255,0.82); backdrop-filter: blur(8px);">
+            <span class="modern-alert-icon" style="background:${iconBg[type] || iconBg.info};">
+                <i class="fas fa-${this.getAlertIcon(type)}"></i>
+            </span>
+            <span class="modern-alert-content">
+                <strong>${this.getAlertTitle(type)}</strong> ${message}
+            </span>
+            <button type="button" class="btn-close modern-alert-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     `;
-    
     alertContainer.insertAdjacentHTML('beforeend', alertHTML);
     
     // Auto-dismiss alerts after 5 seconds (unless persistent is set)

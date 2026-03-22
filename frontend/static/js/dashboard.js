@@ -104,7 +104,7 @@ const DashboardModule = {
                         loadSkillDemandAnalytics: function() {
                             const panel = document.getElementById('skillDemandPanel');
                             if (!panel) return;
-                            fetch('/api/skill-demand', {
+                            fetch('/api/profile/current', {
                                 method: 'GET',
                                 headers: {
                                     'X-CSRFToken': this.getCsrfToken(),
@@ -113,34 +113,54 @@ const DashboardModule = {
                             })
                             .then(res => res.json())
                             .then(data => {
-                                if (!data.demand) {
-                                    panel.innerHTML = '<div class="text-muted">No skill demand analytics available. Run analysis to see details.</div>';
+                                if (!data.has_profile || !data.profile) {
+                                    panel.innerHTML = `<div class="empty-state text-center py-4">
+                                        <i class="fas fa-user-circle fa-3x text-secondary mb-3"></i>
+                                        <h6 class="mb-2">No Profile Found</h6>
+                                        <p class="mb-3">Upload your resume or build your profile to unlock analytics and personalized insights.</p>
+                                        <button class="btn btn-primary" onclick="document.getElementById('uploadResumeNav').click()">
+                                            <i class="fas fa-file-upload me-2"></i>Upload Resume
+                                        </button>
+                                        <button class="btn btn-outline-secondary ms-2" onclick="document.getElementById('manualProfileNav').click()">
+                                            <i class="fas fa-edit me-2"></i>Build Profile
+                                        </button>
+                                    </div>`;
                                     return;
                                 }
-                                panel.innerHTML = `<div class="mb-2">High Demand Roles: <strong>${Math.round(data.demand.high_demand_roles * 100)}%</strong></div>
-                                    <div class="mb-2">Traditional Roles: <strong>${Math.round(data.demand.traditional_roles * 100)}%</strong></div>
-                                    <div class="mb-2">Career Prediction: <strong>${data.prediction || '--'}</strong></div>
-                                    <div class="mb-2">Confidence Score: <strong>${data.confidence || '--'}</strong></div>`;
+                                let completion = 0;
+                                if (data.profile.education && data.profile.education.degrees && data.profile.education.degrees.length) completion += 25;
+                                if (data.profile.experience && data.profile.experience.length && data.profile.experience[0].years > 0) completion += 25;
+                                if (data.profile.skills && data.profile.skills.length) completion += 35;
+                                if (data.profile.interests && data.profile.interests.length) completion += 15;
+                                completion = Math.min(100, completion);
+                                // Summary card
+                                let summary = `<div class="dashboard-card mb-3" style="display:flex;align-items:center;gap:18px;">
+                                    <div style="flex:1;">
+                                        <div class="fw-bold mb-1">Profile Completion</div>
+                                        <div class="progress mb-1" style="height: 10px;">
+                                            <div class="progress-bar bg-success" role="progressbar" style="width: ${completion}%" aria-valuenow="${completion}" aria-valuemin="0" aria-valuemax="100"></div>
+                                        </div>
+                                        <span class="badge bg-success fs-6">${completion}%</span>
+                                    </div>
+                                    <div style="flex:1;">
+                                        <div class="small text-muted">Education, experience, skills, and interests contribute to completion.</div>
+                                    </div>
+                                </div>`;
+                                panel.innerHTML = summary;
                             })
                             .catch(() => {
-                                panel.innerHTML = '<div class="text-danger">Failed to load skill demand analytics. Try again later.</div>';
+                                panel.innerHTML = '<div class="text-danger">Failed to load profile analytics. Try again later.</div>';
                             });
-                        },
-                    // Load Profile Completion Analytics
-                    loadProfileAnalytics: function() {
-                        const panel = document.getElementById('profile-analytics-content');
-                        if (!panel) return;
-                        fetch('/api/profile/current', {
-                            method: 'GET',
-                            headers: {
-                                'X-CSRFToken': this.getCsrfToken(),
-                                'Accept': 'application/json'
-                            }
-                        })
-                        .then(res => res.json())
-                        .then(data => {
-                            if (!data.has_profile || !data.profile) {
-                                panel.innerHTML = '<div class="text-muted">No profile found. Upload your resume or build your profile to see analytics.</div>';
+                                        <i class="fas fa-user-circle fa-3x text-secondary mb-3"></i>
+                                        <h6 class="mb-2">No Profile Found</h6>
+                                        <p class="mb-3">Upload your resume or build your profile to unlock analytics and personalized insights.</p>
+                                        <button class="btn btn-primary" onclick="document.getElementById('uploadResumeNav').click()">
+                                            <i class="fas fa-file-upload me-2"></i>Upload Resume
+                                        </button>
+                                        <button class="btn btn-outline-secondary ms-2" onclick="document.getElementById('manualProfileNav').click()">
+                                            <i class="fas fa-edit me-2"></i>Build Profile
+                                        </button>
+                                    </div>`;
                                 return;
                             }
                             let completion = 0;
@@ -174,7 +194,18 @@ const DashboardModule = {
                         .then(res => res.json())
                         .then(data => {
                             if (!data.has_profile || !data.profile) {
-                                panel.innerHTML = '<div class="text-muted">No profile found. Upload your resume or build your profile to see skill gap insights.</div>';
+                                panel.innerHTML = `
+                                    <div class="empty-state text-center py-4">
+                                        <i class="fas fa-chart-bar fa-3x text-secondary mb-3"></i>
+                                        <h6 class="mb-2">No Profile Found</h6>
+                                        <p class="mb-3">Upload your resume or build your profile to view skill gap insights.</p>
+                                        <button class="btn btn-primary" onclick="document.getElementById('uploadResumeNav').click()">
+                                            <i class="fas fa-file-upload me-2"></i>Upload Resume
+                                        </button>
+                                        <button class="btn btn-outline-secondary ms-2" onclick="document.getElementById('manualProfileNav').click()">
+                                            <i class="fas fa-edit me-2"></i>Build Profile
+                                        </button>
+                                    </div>`;
                                 return;
                             }
                             fetch('/analyze_profile', {
@@ -189,14 +220,14 @@ const DashboardModule = {
                             .then(res => res.json())
                             .then(result => {
                                 if (!result.skill_gap || result.skill_gap.length === 0) {
-                                    panel.innerHTML = '<div class="text-muted">No skill gaps detected. Your profile covers all key areas.</div>';
+                                    panel.innerHTML = '<div class="dashboard-card bg-success bg-opacity-10 text-success mb-2"><i class="fas fa-check-circle me-2"></i>No skill gaps detected. Your profile covers all key areas.</div>';
                                     return;
                                 }
-                                let html = '<ul class="list-group">';
+                                let html = '<div class="dashboard-card mb-2"><div class="fw-bold mb-2">Top Skill Gaps</div><ul class="list-group">';
                                 result.skill_gap.forEach(skill => {
-                                    html += `<li class="list-group-item"><i class="fas fa-exclamation-circle text-warning me-2"></i>${skill}</li>`;
+                                    html += `<li class="list-group-item d-flex align-items-center"><span class="badge bg-warning text-dark me-2"><i class="fas fa-exclamation-circle"></i></span>${skill}</li>`;
                                 });
-                                html += '</ul>';
+                                html += '</ul></div>';
                                 panel.innerHTML = html;
                             })
                             .catch(() => {
@@ -218,45 +249,59 @@ const DashboardModule = {
                             'Accept': 'application/json'
                         }
                     })
-                    .then(res => res.json())
-                    .then(data => {
-                        if (!data.has_profile || !data.profile) {
-                            panel.innerHTML = '<div class="text-muted">No profile found. Upload your resume or build your profile to get AI suggestions.</div>';
-                            return;
-                        }
-                        fetch('/analyze_profile', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-CSRFToken': this.getCsrfToken(),
-                                'Accept': 'application/json'
-                            },
-                            body: JSON.stringify(data.profile)
-                        })
                         .then(res => res.json())
-                        .then(result => {
-                            if (!result.recommendations || result.recommendations.length === 0) {
-                                panel.innerHTML = '<div class="text-muted">No recommendations found. Add more skills or interests for better matches.</div>';
+                        .then(data => {
+                            if (!data.has_profile || !data.profile) {
+                                panel.innerHTML = `
+                                    <div class="empty-state text-center py-4">
+                                        <i class="fas fa-robot fa-3x text-secondary mb-3"></i>
+                                        <h6 class="mb-2">No Profile Found</h6>
+                                        <p class="mb-3">Upload your resume or build your profile to get AI-powered career suggestions.</p>
+                                        <button class="btn btn-primary" onclick="document.getElementById('uploadResumeNav').click()">
+                                            <i class="fas fa-file-upload me-2"></i>Upload Resume
+                                        </button>
+                                        <button class="btn btn-outline-secondary ms-2" onclick="document.getElementById('manualProfileNav').click()">
+                                            <i class="fas fa-edit me-2"></i>Build Profile
+                                        </button>
+                                    </div>`;
                                 return;
                             }
-                            let html = '<ul class="list-group">';
-                            result.recommendations.forEach(rec => {
-                                html += `<li class="list-group-item">
-                                    <div class="fw-bold"><i class="fas fa-briefcase me-2"></i>${rec.job_title}</div>
-                                    <div class="small text-muted">Match Score: ${rec.match_score}% | Confidence: ${rec.confidence_band}</div>
-                                    <div class="mt-1">${rec.explanation.join('<br>')}</div>
-                                </li>`;
+                            fetch('/analyze_profile', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRFToken': this.getCsrfToken(),
+                                    'Accept': 'application/json'
+                                },
+                                body: JSON.stringify(data.profile)
+                            })
+                            .then(res => res.json())
+                            .then(result => {
+                                if (!result.recommendations || result.recommendations.length === 0) {
+                                    panel.innerHTML = '<div class="dashboard-card bg-warning bg-opacity-10 text-warning mb-2"><i class="fas fa-info-circle me-2"></i>No recommendations found. Add more skills or interests for better matches.</div>';
+                                    return;
+                                }
+                                let html = '<div class="dashboard-card mb-2"><div class="fw-bold mb-2">Top Career Recommendations</div><ul class="list-group">';
+                                result.recommendations.forEach(rec => {
+                                    html += `<li class="list-group-item d-flex flex-column flex-md-row align-items-md-center justify-content-between">
+                                        <div class="fw-bold"><i class="fas fa-briefcase me-2"></i>${rec.job_title}</div>
+                                        <div class="d-flex align-items-center gap-2 mt-1 mt-md-0">
+                                            <span class="badge bg-primary">${rec.match_score}% Match</span>
+                                            <span class="badge bg-info text-dark">${rec.confidence_band}</span>
+                                        </div>
+                                        <div class="mt-1 small text-muted">${rec.explanation.join('<br>')}</div>
+                                    </li>`;
+                                });
+                                html += '</ul></div>';
+                                panel.innerHTML = html;
+                            })
+                            .catch(() => {
+                                panel.innerHTML = '<div class="text-danger">Failed to load AI suggestions. Try again later.</div>';
                             });
-                            html += '</ul>';
-                            panel.innerHTML = html;
                         })
                         .catch(() => {
-                            panel.innerHTML = '<div class="text-danger">Failed to load AI suggestions. Try again later.</div>';
+                            panel.innerHTML = '<div class="text-danger">Failed to load profile. Try again later.</div>';
                         });
-                    })
-                    .catch(() => {
-                        panel.innerHTML = '<div class="text-danger">Failed to load profile. Try again later.</div>';
-                    });
                 },
             // Show onboarding tooltip
             showOnboardingTooltip: function() {

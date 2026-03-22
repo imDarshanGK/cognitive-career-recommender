@@ -1,3 +1,66 @@
+/* Modern Toast/Alert Styles */
+.modern-alert {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    min-width: 320px;
+    max-width: 420px;
+    margin-bottom: 18px;
+    padding: 18px 18px 18px 14px;
+    border-radius: 18px;
+    font-size: 1.04rem;
+    color: var(--text);
+    position: relative;
+    background: rgba(255,255,255,0.82);
+    box-shadow: 0 8px 32px rgba(16,34,63,0.18);
+    border-left: 6px solid var(--primary);
+    animation: slideInRight 0.5s cubic-bezier(0.42,0,0.58,1);
+    z-index: 2000;
+}
+.modern-alert-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    font-size: 1.3rem;
+    margin-right: 2px;
+    background: #f3f4f6;
+}
+.modern-alert-content {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.modern-alert-close {
+    margin-left: 8px;
+    margin-top: 2px;
+    filter: grayscale(0.2);
+    opacity: 0.7;
+    transition: opacity 0.18s;
+}
+.modern-alert-close:hover {
+    opacity: 1;
+}
+@media (max-width: 600px) {
+    .modern-alert {
+        min-width: 90vw;
+        max-width: 98vw;
+        font-size: 0.98rem;
+        padding: 14px 10px 14px 8px;
+    }
+    .modern-alert-icon {
+        width: 32px;
+        height: 32px;
+        font-size: 1.1rem;
+    }
+}
+@keyframes slideInRight {
+    from { opacity: 0; transform: translateX(32px); }
+    to { opacity: 1; transform: translateX(0); }
+}
 :root {
     --primary: #1b3a6b;
     --secondary: #15a6a0;
@@ -100,34 +163,41 @@ html[data-bs-theme='dark'] a:hover {
 }
 
 .site-navbar {
-    @media (max-width: 768px) {
-        .site-navbar {
-            padding: 0.5rem 0.5rem;
-        }
-        .site-navbar-brand {
-            font-size: 1.1rem;
-        }
-        .site-nav-link {
-            font-size: 1rem;
-            padding: 0.5rem 0.7rem;
-        }
-        .site-theme-toggle {
-            width: 36px;
-            height: 36px;
-        }
-        .dashboard-main, .dashboard-section {
-            padding: 12px 6px !important;
-        }
-        .dashboard-title {
-            font-size: 1.1rem !important;
-        }
-        .dashboard-card {
-            padding: 10px 8px !important;
-        }
-        .panel-card {
-            padding: 10px 8px !important;
-        }
+    background: rgba(255, 255, 255, 0.88) !important;
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+}
+
+@media (max-width: 768px) {
+    .site-navbar {
+        padding: 0.5rem 0.5rem;
     }
+    .site-navbar-brand {
+        font-size: 1.1rem;
+    }
+    .site-nav-link {
+        font-size: 1rem;
+        padding: 0.5rem 0.7rem;
+    }
+    .site-theme-toggle {
+        width: 36px;
+        height: 36px;
+    }
+    .dashboard-main, .dashboard-section {
+        padding: 12px 6px !important;
+    }
+    .dashboard-title {
+        font-size: 1.1rem !important;
+    }
+    .dashboard-card {
+        padding: 10px 8px !important;
+    }
+    .panel-card {
+        padding: 10px 8px !important;
+    }
+}
+.site-navbar {
     background: rgba(255, 255, 255, 0.88) !important;
     backdrop-filter: blur(10px);
     border-bottom: 1px solid rgba(15, 23, 42, 0.08);
