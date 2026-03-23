@@ -1,0 +1,116 @@
+
+/* --- Modern Dashboard Upgrade --- */
+.dashboard-main {
+  padding: 36px 18px 36px 18px;
+  background: var(--bg);
+  min-height: 100vh;
+}
+.dashboard-section {
+  background: var(--surface);
+  border-radius: 18px;
+  box-shadow: 0 8px 32px rgba(37,99,235,0.10);
+  margin-bottom: 36px;
+  padding: 32px 28px 32px 22px;
+  border-left: 6px solid var(--primary);
+  position: relative;
+  transition: box-shadow 0.3s, background 0.3s, border-color 0.3s;
+  background-clip: padding-box;
+}
+.dashboard-section:hover {
+  box-shadow: 0 16px 48px rgba(37,99,235,0.16);
+  background: var(--accent);
+  color: #fff;
+  border-left: 6px solid var(--accent);
+}
+.dashboard-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--primary);
+  margin-bottom: 18px;
+  letter-spacing: 0.01em;
+  text-shadow: 0 2px 8px rgba(37,99,235,0.06);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.dashboard-title i {
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  color: #fff;
+  border-radius: 50%;
+  font-size: 1.1em;
+  width: 2em;
+  height: 2em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(37,99,235,0.08);
+  margin-right: 2px;
+  transition: background 0.3s;
+}
+.dashboard-section:hover .dashboard-title i {
+  background: linear-gradient(135deg, var(--accent), var(--primary));
+}
+.dashboard-card {
+  background: #f8fafc;
+  border-radius: 14px;
+  box-shadow: 0 4px 16px rgba(37,99,235,0.07);
+  padding: 20px 18px;
+  margin-bottom: 18px;
+  transition: background 0.3s, box-shadow 0.3s;
+}
+.dashboard-card:hover {
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 8px 32px rgba(37,99,235,0.13);
+}
+.dashboard-btn {
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  color: #fff;
+  border-radius: 999px;
+  padding: 10px 26px;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(37,99,235,0.10);
+  border: none;
+  transition: background 0.3s, transform 0.3s;
+}
+.dashboard-btn:hover {
+  background: linear-gradient(135deg, var(--secondary), var(--primary));
+  color: #fff;
+  transform: scale(1.05);
+  box-shadow: 0 4px 16px rgba(37,99,235,0.13);
+}
+.fade-in {
+  animation: fadeIn 0.7s ease;
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (max-width: 900px) {
+  .dashboard-shell {
+    grid-template-columns: 1fr;
+  }
+  .dashboard-sidebar {
+    position: static;
+    height: auto;
+    padding: 18px 8px;
+    border-radius: 18px;
+    box-shadow: 0 8px 32px rgba(37,99,235,0.10);
+    margin-bottom: 18px;
+  }
+  .dashboard-main {
+    padding: 18px 6px;
+  }
+}
+@media (max-width: 600px) {
+  .dashboard-title {
+    font-size: 1.08rem;
+  }
+  .dashboard-card {
+    padding: 10px 6px;
+    font-size: 0.98rem;
+  }
+  .dashboard-section {
+    padding: 14px 8px 14px 6px;
+  }
+}

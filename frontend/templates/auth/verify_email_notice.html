@@ -79,7 +79,7 @@
     <div class="verify-panel otp-panel">
         <p class="verify-panel-title">Or verify using OTP code</p>
         <form method="POST" action="/verify-email-code" class="otp-form">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
             <input type="hidden" name="email" value="{{ request.args.get('email', '') }}">
             <div class="otp-row">
                 <input type="text" name="otp_code" maxlength="6" pattern="[0-9]{6}" class="form-control otp-input" placeholder="Enter 6-digit OTP" required>
@@ -101,7 +101,7 @@
 
     <div class="verify-help-text">Didn't receive the email? Check your spam or junk folder.</div>
     <form method="POST" action="/resend-verification" class="resend-form">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
         <input type="hidden" name="email" value="{{ request.args.get('email', '') }}">
         <button type="submit" class="btn btn-link p-0">Resend verification email</button>
     </form>

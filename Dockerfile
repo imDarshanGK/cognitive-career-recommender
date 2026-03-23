@@ -7,7 +7,8 @@ RUN apt-get update && apt-get install -y \
     gcc \
     g++ \
     make \
-    libatlas-base-dev \
+    libopenblas-dev \
+    libgomp1 \
     && rm -rf /var/lib/apt/lists/*
 
 # Upgrade pip, wheel, setuptools to latest
@@ -30,7 +31,7 @@ EXPOSE 5000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:5000/').read()"
+    CMD sh -c "python -c \"import os, urllib.request; urllib.request.urlopen('http://localhost:%s/' % os.getenv('PORT', '5000')).read()\""
 
-# Run the application
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "4", "backend.app:app"]
+# Run the application with conservative worker settings for smaller memory environments
+CMD ["sh", "-c", "gunicorn --bind 0.0.0.0:${PORT:-5000} --workers 1 --threads 2 --worker-class gthread --timeout 120 --graceful-timeout 30 --keep-alive 5 backend.app:app"]

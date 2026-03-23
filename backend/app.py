@@ -15,6 +15,7 @@ import logging
 import tempfile
 import shutil
 import smtplib
+import ssl
 import re
 import json
 from email.mime.text import MIMEText
@@ -33,6 +34,11 @@ from utils.data_processor import DataProcessor
 from config import Config
 from models import db, User, UserProfile, UserSkill
 from services.auth_service import AuthService
+from services.ai_upgrade import (
+    extract_profile_from_transcript,
+    generate_interview_question,
+    evaluate_interview_answer,
+)
 
 app = Flask(__name__,
             template_folder=os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'frontend', 'templates'),
@@ -110,7 +116,7 @@ app.secret_key = app.config.get('SECRET_KEY') or secrets.token_hex(32)
 
 @app.context_processor
 def inject_csrf_token():
-    return {'csrf_token': generate_csrf}
+    return {'csrf_token': generate_csrf()}
 
 # Security headers middleware
 @app.after_request
@@ -268,22 +274,74 @@ def _delete_reset_token(token):
         conn.execute("DELETE FROM password_reset_tokens WHERE token = ?", (token,))
 
 
+def _get_mail_settings():
+    mail_server = (app.config.get('MAIL_SERVER') or '').strip()
+    mail_port = app.config.get('MAIL_PORT')
+    mail_username = (app.config.get('MAIL_USERNAME') or '').strip()
+    mail_password = (app.config.get('MAIL_PASSWORD') or '').strip()
+    mail_sender = (app.config.get('MAIL_DEFAULT_SENDER') or mail_username).strip()
+
+    # Gmail app passwords are often copied in a grouped format like
+    # "abcd efgh ijkl mnop"; SMTP requires the contiguous value.
+    if mail_server.lower() == 'smtp.gmail.com' and ' ' in mail_password:
+        mail_password = mail_password.replace(' ', '')
+
+    return {
+        'server': mail_server,
+        'port': mail_port,
+        'username': mail_username,
+        'password': mail_password,
+        'sender': mail_sender,
+    }
+
+
+def _send_smtp_message(message, recipient_email, purpose):
+    settings = _get_mail_settings()
+
+    if not settings['username'] or not settings['password'] or settings['username'] == 'your-email@gmail.com':
+        logger.warning(f"Email not configured. Cannot send {purpose} email to {recipient_email}.")
+        return False
+
+    message['From'] = settings['sender'] or settings['username']
+    message['To'] = recipient_email
+
+    timeout = 20
+    try:
+        if int(settings['port'] or 0) == 465:
+            with smtplib.SMTP_SSL(settings['server'], settings['port'], timeout=timeout, context=ssl.create_default_context()) as server:
+                server.login(settings['username'], settings['password'])
+                server.send_message(message)
+        else:
+            with smtplib.SMTP(settings['server'], settings['port'], timeout=timeout) as server:
+                server.ehlo()
+                server.starttls(context=ssl.create_default_context())
+                server.ehlo()
+                server.login(settings['username'], settings['password'])
+                server.send_message(message)
+
+        logger.info(f"{purpose.capitalize()} email sent to {recipient_email}")
+        return True
+    except smtplib.SMTPAuthenticationError as exc:
+        logger.error(f"SMTP authentication failed sending {purpose} email to {recipient_email}: {exc}")
+        return False
+    except smtplib.SMTPRecipientsRefused as exc:
+        logger.error(f"Recipient refused for {purpose} email to {recipient_email}: {exc}")
+        return False
+    except smtplib.SMTPException as exc:
+        logger.error(f"SMTP error sending {purpose} email to {recipient_email}: {exc}")
+        return False
+    except Exception as exc:
+        logger.error(f"Unexpected error sending {purpose} email to {recipient_email}: {exc}")
+        return False
+
+
 def send_reset_email(email, reset_token, first_name):
     """Send password reset link to user."""
     try:
-        mail_username = app.config.get('MAIL_USERNAME')
-        mail_password = app.config.get('MAIL_PASSWORD')
-
-        if not mail_username or not mail_password or mail_username == 'your-email@gmail.com':
-            logger.warning(f"Email not configured. Cannot send reset email to {email}.")
-            return False
-
         reset_link = url_for('reset_password', token=reset_token, _external=True)
 
         msg = MIMEMultipart('alternative')
         msg['Subject'] = 'Reset Your Password - CareerAI'
-        msg['From'] = app.config.get('MAIL_DEFAULT_SENDER')
-        msg['To'] = email
 
         html_content = f"""
         <html>
@@ -329,17 +387,7 @@ CareerAI Team
 
         msg.attach(MIMEText(text_content, 'plain'))
         msg.attach(MIMEText(html_content, 'html'))
-
-        server = smtplib.SMTP(app.config.get('MAIL_SERVER'), app.config.get('MAIL_PORT'))
-        server.starttls()
-        server.login(mail_username, mail_password)
-        server.send_message(msg)
-        server.quit()
-        logger.info(f"Password reset email sent to {email}")
-        return True
-    except smtplib.SMTPAuthenticationError:
-        logger.error("SMTP authentication failed sending reset email.")
-        return False
+        return _send_smtp_message(msg, email, 'password reset')
     except Exception as e:
         logger.error(f"Error sending reset email to {email}: {e}")
         return False
@@ -403,22 +451,12 @@ def _verify_email_otp(email, otp_code):
 def send_verification_email(email, verification_token, first_name, otp_code=None):
     """Send email verification link to user"""
     try:
-        # Check if email configuration is available
-        mail_username = app.config.get('MAIL_USERNAME')
-        mail_password = app.config.get('MAIL_PASSWORD')
-        
-        if not mail_username or not mail_password or mail_username == 'your-email@gmail.com':
-            logger.warning(f"Email not configured. Skipping email send for {email}. Token: {verification_token}")
-            return False
-        
         # Create verification link
-        verification_link = f"http://localhost:5000/verify-email/{verification_token}"
+        verification_link = url_for('verify_email', token=verification_token, _external=True)
         
         # Create email message
         msg = MIMEMultipart('alternative')
         msg['Subject'] = 'Verify Your Email - CareerAI'
-        msg['From'] = app.config.get('MAIL_DEFAULT_SENDER')
-        msg['To'] = email
         
         # HTML version of email
         html_content = f"""
@@ -480,22 +518,7 @@ def send_verification_email(email, verification_token, first_name, otp_code=None
         # Attach both versions
         msg.attach(MIMEText(text_content, 'plain'))
         msg.attach(MIMEText(html_content, 'html'))
-        
-        # Send email via SMTP
-        try:
-            server = smtplib.SMTP(app.config.get('MAIL_SERVER'), app.config.get('MAIL_PORT'))
-            server.starttls()
-            server.login(mail_username, mail_password)
-            server.send_message(msg)
-            server.quit()
-            logger.info(f"Verification email sent successfully to {email}")
-            return True
-        except smtplib.SMTPAuthenticationError:
-            logger.error(f"SMTP authentication failed. Check MAIL_USERNAME and MAIL_PASSWORD in .env")
-            return False
-        except smtplib.SMTPException as e:
-            logger.error(f"SMTP error sending email to {email}: {e}")
-            return False
+        return _send_smtp_message(msg, email, 'verification')
             
     except Exception as e:
         logger.error(f"Error sending verification email to {email}: {e}")
@@ -1279,7 +1302,8 @@ def upload_resume():
         
         # Prevent double extensions like .pdf.exe
         if len(file_ext) > 4 or file_ext not in allowed_extensions:
-            return jsonify({'error': f'Invalid file type. Allowed types: {', '.join(sorted(allowed_extensions))}'}), 400
+            allowed_list = ', '.join(sorted(allowed_extensions))
+            return jsonify({'error': f'Invalid file type. Allowed types: {allowed_list}'}), 400
 
         allowed_mime_types = {
             'application/pdf',
@@ -1476,6 +1500,63 @@ def get_jobs_data():
     }
     jobs_data = data_processor.get_job_market_data(filters)
     return jsonify(jobs_data if jobs_data else {})
+
+
+@app.route('/api/speech/profile-extract', methods=['POST'])
+@db_login_required
+def speech_profile_extract():
+    """Convert spoken transcript into structured profile fields."""
+    try:
+        payload = request.get_json() or {}
+    except Exception:
+        return jsonify({'success': False, 'message': 'Invalid JSON data'}), 400
+
+    transcript = str(payload.get('transcript', '')).strip()
+    result = extract_profile_from_transcript(transcript)
+    status_code = 200 if result.get('success') else 400
+    return jsonify(result), status_code
+
+
+@app.route('/api/ai/interview-question', methods=['POST'])
+@db_login_required
+def ai_interview_question():
+    """Generate a role-specific interview question."""
+    try:
+        payload = request.get_json() or {}
+    except Exception:
+        return jsonify({'success': False, 'message': 'Invalid JSON data'}), 400
+
+    role = str(payload.get('role', '')).strip()
+    if not role:
+        return jsonify({'success': False, 'message': 'Role is required.'}), 400
+
+    return jsonify(generate_interview_question(role))
+
+
+@app.route('/api/ai/interview-evaluate', methods=['POST'])
+@db_login_required
+def ai_interview_evaluate():
+    """Evaluate interview answer with an explainable scoring rubric."""
+    try:
+        payload = request.get_json() or {}
+    except Exception:
+        return jsonify({'success': False, 'message': 'Invalid JSON data'}), 400
+
+    role = str(payload.get('role', '')).strip()
+    answer = str(payload.get('answer', '')).strip()
+    missing_skills = payload.get('missing_skills', [])
+
+    if not isinstance(missing_skills, list):
+        missing_skills = []
+
+    if not role:
+        return jsonify({'success': False, 'message': 'Role is required.'}), 400
+    if not answer:
+        return jsonify({'success': False, 'message': 'Answer is required.'}), 400
+
+    result = evaluate_interview_answer(role, answer, missing_skills=missing_skills)
+    status_code = 200 if result.get('success') else 400
+    return jsonify(result), status_code
 
 @app.errorhandler(404)
 def not_found_error(error):

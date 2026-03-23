@@ -7,7 +7,11 @@ from dotenv import load_dotenv
 
 
 BASE_DIR = Path(__file__).resolve().parent
-load_dotenv(BASE_DIR / ".env")
+PROJECT_ROOT = BASE_DIR.parent
+
+# Load local env files for dev; keep platform env vars (Render, Docker, etc.) as priority.
+load_dotenv(BASE_DIR / ".env", override=False)
+load_dotenv(PROJECT_ROOT / ".env", override=False)
 
 
 def _to_int(value, default):

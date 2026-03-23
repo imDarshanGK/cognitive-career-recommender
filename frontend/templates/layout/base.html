@@ -14,10 +14,11 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.1/css/all.min.css">
     
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Work+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
     <!-- Custom CSS -->
     <link href="{{ url_for('static', filename='css/main.css') }}" rel="stylesheet">
+        <link href="{{ url_for('static', filename='css/chatbot.css') }}" rel="stylesheet">
     {% block extra_css %}{% endblock %}
     
     <!-- Favicon -->
@@ -38,6 +39,25 @@
         {% block content %}{% endblock %}
     </main>
     
+        <!-- Chatbot Floating Button -->
+        <div id="chatbot-btn" title="Ask CareerAI">
+            <i class="fas fa-comments"></i>
+        </div>
+        <!-- Chatbot Window -->
+        <div id="chatbot-window">
+            <div id="chatbot-header">
+                <span>CareerAI Chatbot</span>
+                <button id="chatbot-close" aria-label="Close">&times;</button>
+            </div>
+            <div id="chatbot-body">
+                <div class="chatbot-message chatbot-welcome">Hello! I am your professional assistant. Ask me anything about careers, skills, or jobs.</div>
+            </div>
+            <div id="chatbot-input">
+                <textarea id="chatbot-text" rows="1" placeholder="Type your question..."></textarea>
+                <button id="chatbot-send" aria-label="Send"><i class="fas fa-paper-plane"></i></button>
+            </div>
+        </div>
+    
     <!-- Footer -->
     {% if not hide_footer %}
         {% include 'components/footer.html' %}
@@ -51,6 +71,7 @@
     
     <!-- Custom JS -->
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+        <script src="{{ url_for('static', filename='js/chatbot.js') }}"></script>
     {% block extra_js %}{% endblock %}
     
 </body>
