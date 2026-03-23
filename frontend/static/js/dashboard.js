@@ -65,6 +65,92 @@ const DashboardModule = {
         this.loadSkillGapAnalytics();
         this.loadExplainableOutput();
         this.loadSkillDemandAnalytics();
+        this.loadAIInsightBox();
+        this.setupLiveJobsFallback();
+                                // Always show spinner and fallback for Live Jobs
+                                setupLiveJobsFallback: function() {
+                                    const liveJobsContent = document.getElementById('live-jobs-content');
+                                    const spinner = document.getElementById('live-jobs-spinner');
+                                    const message = document.getElementById('live-jobs-message');
+                                    if (!liveJobsContent || !spinner || !message) return;
+                                    // Show spinner on load
+                                    spinner.style.display = 'inline-block';
+                                    message.textContent = 'Loading live jobs...';
+                                    // Hide spinner after jobs load or fail (hook into renderLiveJobs and resetLiveJobsPanel)
+                                    const origRender = this.renderLiveJobs.bind(this);
+                                    this.renderLiveJobs = function(jobs, source = 'adzuna', options = {}) {
+                                        spinner.style.display = 'none';
+                                        message.style.display = 'none';
+                                        origRender(jobs, source, options);
+                                    };
+                                    const origReset = this.resetLiveJobsPanel.bind(this);
+                                    this.resetLiveJobsPanel = function(options = {}) {
+                                        spinner.style.display = 'none';
+                                        message.style.display = 'block';
+                                        message.textContent = options && options.subtitle ? options.subtitle : 'Live job data unavailable. Please refresh or try again later.';
+                                        origReset(options);
+                                    };
+                                },
+                            // Load AI Insight Box (hero section)
+                            loadAIInsightBox: function() {
+                                const insightBox = document.getElementById('ai-insight-content');
+                                if (!insightBox) return;
+                                insightBox.innerHTML = 'Loading your AI insights...';
+                                fetch('/api/profile/current', {
+                                    method: 'GET',
+                                    headers: {
+                                        'X-CSRFToken': this.getCsrfToken(),
+                                        'Accept': 'application/json'
+                                    }
+                                })
+                                .then(res => res.json())
+                                .then(data => {
+                                    if (!data.has_profile || !data.profile) {
+                                        insightBox.innerHTML = 'Upload your resume to see your best job matches, missing skills, and readiness estimate.';
+                                        return;
+                                    }
+                                    fetch('/analyze_profile', {
+                                        method: 'POST',
+                                        headers: {
+                                            'Content-Type': 'application/json',
+                                            'X-CSRFToken': this.getCsrfToken(),
+                                            'Accept': 'application/json'
+                                        },
+                                        body: JSON.stringify(data.profile)
+                                    })
+                                    .then(res => res.json())
+                                    .then(result => {
+                                        let html = '';
+                                        if (result.recommendations && result.recommendations.length > 0) {
+                                            const top = result.recommendations[0];
+                                            html += `<div><span class='fw-bold text-primary'><i class='fas fa-star me-1'></i>Top Match:</span> ${top.job_title} <span class='badge bg-primary ms-2'>${top.match_score}%</span></div>`;
+                                            if (top.confidence_band) {
+                                                html += ` <span class='badge bg-info text-dark ms-1'>${top.confidence_band}</span>`;
+                                            }
+                                            if (top.explanation && top.explanation.length) {
+                                                html += `<div class='small text-muted mt-1'>${top.explanation[0]}</div>`;
+                                            }
+                                        } else {
+                                            html += `<div>No matches yet. Add more skills or interests for better results.</div>`;
+                                        }
+                                        if (result.skill_gap && result.skill_gap.length > 0) {
+                                            html += `<div class='mt-2'><span class='fw-bold text-warning'><i class='fas fa-exclamation-circle me-1'></i>Skill Gap:</span> ${result.skill_gap.slice(0,3).join(', ')}${result.skill_gap.length > 3 ? ', ...' : ''}</div>`;
+                                        } else if (result.skill_gap && result.skill_gap.length === 0) {
+                                            html += `<div class='mt-2 text-success'><i class='fas fa-check-circle me-1'></i>No major skill gaps detected.</div>`;
+                                        }
+                                        if (result.readiness !== undefined) {
+                                            html += `<div class='mt-2'><span class='fw-bold text-success'><i class='fas fa-bolt me-1'></i>Readiness:</span> ${result.readiness}%</div>`;
+                                        }
+                                        insightBox.innerHTML = html;
+                                    })
+                                    .catch(() => {
+                                        insightBox.innerHTML = 'Could not load AI insights. Try again later.';
+                                    });
+                                })
+                                .catch(() => {
+                                    insightBox.innerHTML = 'Could not load AI insights. Try again later.';
+                                });
+                            },
                         // Load Explainable Output
                         loadExplainableOutput: function() {
                             const panel = document.getElementById('explainableOutputPanel');

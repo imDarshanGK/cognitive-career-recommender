@@ -123,42 +123,62 @@
                     </aside>
 
                     <main class="dashboard-main fade-in">
-                                                <!-- Profile Completion Analytics Widget -->
-                                                <section class="dashboard-section" id="profile-analytics">
-                                                    <div class="dashboard-title" role="heading" aria-level="2">
-                                                        <i class="fas fa-user-check me-2" aria-hidden="true"></i>Profile Completion Analytics
-                                                    </div>
-                                                    <div id="profile-analytics-content" role="region" aria-label="Profile Completion Analytics">
-                                                        <div class="text-muted">Loading profile analytics...</div>
-                                                    </div>
-                                                </section>
-                                                <!-- Skill Gap Visualization Widget -->
-                                                <section class="dashboard-section" id="skill-gap-analytics">
-                                                    <div class="dashboard-title" role="heading" aria-level="2">
-                                                        <i class="fas fa-chart-bar me-2" aria-hidden="true"></i>Skill Gap Visualization
-                                                    </div>
-                                                    <div id="skill-gap-analytics-content" role="region" aria-label="Skill Gap Visualization">
-                                                        <div class="text-muted">Loading skill gap insights...</div>
-                                                    </div>
-                                                </section>
-                        <!-- AI Suggestions Widget -->
-                        <section class="dashboard-section" id="ai-suggestions">
-                            <div class="dashboard-title" role="heading" aria-level="2">
-                                <i class="fas fa-robot me-2" aria-hidden="true"></i>AI Career Suggestions
-                            </div>
-                            <div id="ai-suggestions-content" role="region" aria-label="AI Career Suggestions">
-                                <div class="text-muted">Loading personalized recommendations...</div>
+                        <!-- HERO SECTION: Upload/Run Analysis -->
+                        <section class="dashboard-section hero-section" id="hero-section">
+                            <div class="hero-content">
+                                <h1>Welcome back, {% if user.name %}{{ user.name.split(' ')[0] }}{% else %}User{% endif %}.</h1>
+                                <p class="hero-subtitle">Upload your resume or build your profile to get personalized job matches, skill gap analysis, and a learning roadmap.</p>
+                                <div class="hero-actions mb-3">
+                                    <button class="btn btn-primary hero-btn" id="uploadResumeBtn"><i class="fas fa-file-upload me-2"></i>Upload Resume</button>
+                                    <button class="btn btn-success hero-btn" id="runAnalysisBtn"><i class="fas fa-bolt me-2"></i>Run Analysis</button>
+                                </div>
+                                <!-- AI Insight Box -->
+                                <div class="ai-insight-box mt-3 p-3 rounded shadow-sm bg-white">
+                                    <div class="d-flex align-items-center mb-2"><i class="fas fa-brain text-primary me-2"></i><strong>AI Insight</strong></div>
+                                    <div id="ai-insight-content" class="text-muted small">Upload your resume to see your best job matches, missing skills, and readiness estimate.</div>
+                                </div>
                             </div>
                         </section>
-                        <section class="dashboard-section">
-                            <div class="dashboard-title">Welcome to CareerAI Dashboard</div>
-                            <div class="dashboard-card">
-                                <p>Get personalized career recommendations, skill gap analysis, and roadmap guidance.</p>
-                                <button class="dashboard-btn">Explore Careers</button>
+
+                        <!-- TOP MATCHES SECTION -->
+                        <section class="dashboard-section" id="top-matches-section">
+                            <div class="dashboard-title d-flex align-items-center mb-3"><i class="fas fa-star text-warning me-2"></i>Top Job Matches</div>
+                            <div id="top-matches-content">
+                                <!-- Dynamically filled: best 3 jobs with match score, why recommended -->
+                                <div class="text-muted">No matches yet. Upload your resume to see your best job matches.</div>
                             </div>
-                            <div class="dashboard-card">
-                                <p>Upload your resume or build your profile to unlock tailored insights.</p>
-                                <button class="dashboard-btn">Upload Resume</button>
+                        </section>
+
+                        <!-- SKILL GAP SECTION -->
+                        <section class="dashboard-section" id="skill-gap-section">
+                            <div class="dashboard-title d-flex align-items-center mb-3"><i class="fas fa-chart-bar text-info me-2"></i>Skill Gap for Selected Job</div>
+                            <div id="skill-gap-content">
+                                <div class="text-muted">Select a job match to view missing skills.</div>
+                            </div>
+                        </section>
+
+                        <!-- LIVE JOBS SECTION -->
+                        <section class="dashboard-section" id="live-jobs-section">
+                            <div class="dashboard-title d-flex align-items-center mb-3"><i class="fas fa-briefcase text-success me-2"></i>Live Jobs</div>
+                            <div id="live-jobs-content">
+                                <div class="spinner-border text-primary" role="status" id="live-jobs-spinner" style="display:none;"><span class="visually-hidden">Loading...</span></div>
+                                <div class="text-muted" id="live-jobs-message">Live job data will appear here after analysis.</div>
+                            </div>
+                        </section>
+
+                        <!-- ROADMAP SECTION -->
+                        <section class="dashboard-section" id="roadmap-section">
+                            <div class="dashboard-title d-flex align-items-center mb-3"><i class="fas fa-route text-primary me-2"></i>Learning Roadmap</div>
+                            <div id="roadmap-content">
+                                <div class="text-muted">Complete a profile to generate a learning roadmap.</div>
+                            </div>
+                        </section>
+
+                        <!-- ANALYTICS SECTION (LAST) -->
+                        <section class="dashboard-section" id="analytics-section">
+                            <div class="dashboard-title d-flex align-items-center mb-3"><i class="fas fa-chart-pie text-secondary me-2"></i>Analytics</div>
+                            <div id="analytics-content">
+                                <div class="text-muted">Analytics and advanced metrics will appear here after you run an analysis.</div>
                             </div>
                         </section>
                     </main>
@@ -175,9 +195,22 @@
                         and a focused learning roadmap.
                     </p>
                     <div class="hero-highlights" aria-label="Platform highlights">
-                        <span class="hero-highlight-pill"><i class="fas fa-file-lines"></i>Resume Parsing</span>
+                        <span class="hero-highlight-pill bg-primary text-white shadow-sm" data-bs-toggle="tooltip" data-bs-placement="top" title="Upload your resume for instant skill extraction and profile building!"><i class="fas fa-file-lines"></i>Resume Parsing <span class="badge bg-warning text-dark ms-1">AI</span></span>
                         <span class="hero-highlight-pill"><i class="fas fa-sliders"></i>Manual Profile</span>
                         <span class="hero-highlight-pill"><i class="fas fa-lightbulb"></i>Explainable Matching</span>
+                        <script>
+                            document.addEventListener('DOMContentLoaded', function() {
+                                var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+                                tooltipTriggerList.forEach(function (tooltipTriggerEl) {
+                                    new bootstrap.Tooltip(tooltipTriggerEl);
+                                });
+                                // Auto-remove onboarding tooltip after 5 seconds
+                                setTimeout(function() {
+                                    var onboarding = document.getElementById('onboarding-tooltip');
+                                    if (onboarding) onboarding.style.display = 'none';
+                                }, 5000);
+                            });
+                        </script>
                     </div>
                     <div class="hero-actions">
                         <button class="btn btn-primary hero-btn hero-btn-primary" id="getStartedBtn">
