@@ -161,7 +161,13 @@ const DashboardModule = {
                         loadExplainableOutput: function() {
                             const panel = document.getElementById('explainableOutputPanel');
                             if (!panel) return;
-                            fetch('/api/recommendations', {
+                            const cached = this.state.allRecommendationsRaw || this.state.allRecommendations || [];
+                            if (Array.isArray(cached) && cached.length) {
+                                this.renderExplainableOutput(cached);
+                                return;
+                            }
+
+                            fetch(this.config.apiEndpoints.currentProfile, {
                                 method: 'GET',
                                 headers: {
                                     'X-CSRFToken': this.getCsrfToken(),
@@ -170,22 +176,32 @@ const DashboardModule = {
                             })
                             .then(res => res.json())
                             .then(data => {
-                                if (!data.explanations) {
+                                if (!data || !data.has_profile || !data.profile) {
+                                    panel.innerHTML = '<div class="text-muted">No explainable output available. Run analysis to see details.</div>';
+                                    return null;
+                                }
+                                return fetch(this.config.apiEndpoints.analyzeProfile, {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                        'X-CSRFToken': this.getCsrfToken(),
+                                        'Accept': 'application/json'
+                                    },
+                                    body: JSON.stringify(data.profile)
+                                });
+                            })
+                            .then(res => {
+                                if (!res) return null;
+                                return res.json();
+                            })
+                            .then(result => {
+                                if (!result) return;
+                                const recommendations = Array.isArray(result.recommendations) ? result.recommendations : [];
+                                if (!recommendations.length) {
                                     panel.innerHTML = '<div class="text-muted">No explainable output available. Run analysis to see details.</div>';
                                     return;
                                 }
-                                let html = '';
-                                Object.entries(data.explanations).forEach(([job, exp]) => {
-                                    html += `<div class="explainable-card mb-3">
-                                        <h5>${job}</h5>
-                                        <div><strong>Why recommended:</strong> ${exp.why_recommended}</div>
-                                        <div><strong>Matched skills:</strong> ${exp.skill_analysis.matching.join(', ') || '--'}</div>
-                                        <div><strong>Missing skills:</strong> ${exp.skill_analysis.gaps.join(', ') || '--'}</div>
-                                        <div><strong>Confidence:</strong> ${exp.growth_opportunities.potential || '--'}</div>
-                                        <div><strong>Improvement suggestions:</strong> ${exp.improvement_suggestions.join(', ')}</div>
-                                    </div>`;
-                                });
-                                panel.innerHTML = html;
+                                this.renderExplainableOutput(recommendations);
                             })
                             .catch(() => {
                                 panel.innerHTML = '<div class="text-danger">Failed to load explainable output. Try again later.</div>';
@@ -196,16 +212,9 @@ const DashboardModule = {
                         loadSkillDemandAnalytics: function() {
                             const panel = document.getElementById('skillDemandPanel');
                             if (!panel) return;
-                            fetch('/api/profile/current', {
-                                method: 'GET',
-                                headers: {
-                                    'X-CSRFToken': this.getCsrfToken(),
-                                    'Accept': 'application/json'
-                                }
-                            })
-                            .then(res => res.json())
-                            .then(data => {
-                                if (!data.has_profile || !data.profile) {
+
+                            const renderFromProfile = (profile) => {
+                                if (!profile || typeof profile !== 'object') {
                                     panel.innerHTML = `<div class="empty-state text-center py-4">
                                         <i class="fas fa-user-circle fa-3x text-secondary mb-3"></i>
                                         <h6 class="mb-2">No Profile Found</h6>
@@ -219,14 +228,20 @@ const DashboardModule = {
                                     </div>`;
                                     return;
                                 }
+
                                 let completion = 0;
-                                if (data.profile.education && data.profile.education.degrees && data.profile.education.degrees.length) completion += 25;
-                                if (data.profile.experience && data.profile.experience.length && data.profile.experience[0].years > 0) completion += 25;
-                                if (data.profile.skills && data.profile.skills.length) completion += 35;
-                                if (data.profile.interests && data.profile.interests.length) completion += 15;
+                                if (profile.education && profile.education.degrees && profile.education.degrees.length) completion += 25;
+                                if (profile.experience && profile.experience.length && Number(profile.experience[0].years || 0) > 0) completion += 25;
+                                if (profile.skills && profile.skills.length) completion += 35;
+                                if (profile.interests && profile.interests.length) completion += 15;
                                 completion = Math.min(100, completion);
-                                // Summary card
-                                let summary = `<div class="dashboard-card mb-3" style="display:flex;align-items:center;gap:18px;">
+
+                                const skills = Array.isArray(profile.skills) ? profile.skills : [];
+                                const interests = Array.isArray(profile.interests) ? profile.interests : [];
+                                const topSkills = skills.slice(0, 6).map(skill => `<span class="tag-item matching">${skill}</span>`).join('');
+                                const topInterests = interests.slice(0, 4).map(item => `<span class="tag-item market-skill">${item}</span>`).join('');
+
+                                panel.innerHTML = `<div class="dashboard-card mb-3" style="display:flex;align-items:center;gap:18px;">
                                     <div style="flex:1;">
                                         <div class="fw-bold mb-1">Profile Completion</div>
                                         <div class="progress mb-1" style="height: 10px;">
@@ -237,8 +252,39 @@ const DashboardModule = {
                                     <div style="flex:1;">
                                         <div class="small text-muted">Education, experience, skills, and interests contribute to completion.</div>
                                     </div>
+                                </div>
+                                <div class="dashboard-card mb-2">
+                                    <div class="fw-bold mb-2">Top Skills in Your Profile</div>
+                                    <div class="tag-list">${topSkills || '<span class="empty-list">No skills yet</span>'}</div>
+                                </div>
+                                <div class="dashboard-card">
+                                    <div class="fw-bold mb-2">Career Interests</div>
+                                    <div class="tag-list">${topInterests || '<span class="empty-list">No interests yet</span>'}</div>
                                 </div>`;
-                                panel.innerHTML = summary;
+                            };
+
+                            if (this.state.lastProfile && this.hasMeaningfulProfile(this.state.lastProfile)) {
+                                renderFromProfile(this.state.lastProfile);
+                                return;
+                            }
+
+                            fetch(this.config.apiEndpoints.currentProfile, {
+                                method: 'GET',
+                                headers: {
+                                    'X-CSRFToken': this.getCsrfToken(),
+                                    'Accept': 'application/json'
+                                }
+                            })
+                            .then(res => res.json())
+                            .then(data => {
+                                if (!data || !data.has_profile || !data.profile) {
+                                    renderFromProfile(null);
+                                    return;
+                                }
+
+                                this.state.lastProfile = data.profile;
+                                this.state.lastSkills = Array.isArray(data.profile.skills) ? data.profile.skills : [];
+                                renderFromProfile(data.profile);
                             })
                             .catch(() => {
                                 panel.innerHTML = '<div class="text-danger">Failed to load profile analytics. Try again later.</div>';
@@ -1216,6 +1262,50 @@ DashboardModule.resetAnalysisOutputs = function() {
 
     const rerunBtn = document.getElementById('rerunAnalysisBtn');
     if (rerunBtn) rerunBtn.style.display = 'none';
+
+    const explainPanel = document.getElementById('explainableOutputPanel');
+    if (explainPanel) {
+        explainPanel.innerHTML = '<div class="text-muted">No explainable output available. Run analysis to see details.</div>';
+    }
+
+    this.loadSkillDemandAnalytics();
+};
+
+DashboardModule.renderExplainableOutput = function(recommendations) {
+    const panel = document.getElementById('explainableOutputPanel');
+    if (!panel) return;
+
+    if (!Array.isArray(recommendations) || !recommendations.length) {
+        panel.innerHTML = '<div class="text-muted">No explainable output available. Run analysis to see details.</div>';
+        return;
+    }
+
+    const html = recommendations.slice(0, 6).map(rec => {
+        const title = rec.job_title || 'Career Role';
+        const explanation = Array.isArray(rec.explanation) && rec.explanation.length
+            ? rec.explanation[0]
+            : 'Recommended based on overlap between your current profile and role requirements.';
+        const matched = Array.isArray(rec.matched_skills) ? rec.matched_skills : [];
+        const missing = Array.isArray(rec.missing_skills) ? rec.missing_skills : [];
+        const confidenceBand = String(rec.confidence_band || 'medium').toUpperCase();
+        const rangeText = Array.isArray(rec.confidence_range)
+            ? ` (${rec.confidence_range[0]}%-${rec.confidence_range[1]}%)`
+            : '';
+        const improvement = rec.counterfactual && rec.counterfactual.message
+            ? rec.counterfactual.message
+            : (missing.length ? `Prioritize ${missing.slice(0, 2).join(', ')} to improve this match.` : 'Maintain your current skill momentum.');
+
+        return `<div class="panel-card mb-3">
+            <h5 class="mb-2">${title}</h5>
+            <div><strong>Why recommended:</strong> ${explanation}</div>
+            <div><strong>Matched skills:</strong> ${matched.length ? matched.join(', ') : '--'}</div>
+            <div><strong>Missing skills:</strong> ${missing.length ? missing.join(', ') : '--'}</div>
+            <div><strong>Confidence:</strong> ${confidenceBand}${rangeText}</div>
+            <div><strong>Improvement suggestions:</strong> ${improvement}</div>
+        </div>`;
+    }).join('');
+
+    panel.innerHTML = html;
 };
 
 DashboardModule.resetResearchMetrics = function() {
@@ -1537,6 +1627,11 @@ DashboardModule.submitProfileForAnalysis = function(profilePayload, userSkills) 
     // Update profile completion bar
     this.updateProfileCompletion(profilePayload);
 
+    // Keep latest profile in memory so dependent panels can render immediately.
+    this.state.lastProfile = profilePayload || {};
+    this.state.lastSkills = Array.isArray(userSkills) ? userSkills : [];
+    this.state.hasSessionInput = this.hasMeaningfulProfile(this.state.lastProfile);
+
     const csrfToken = this.getCsrfToken();
 
     fetch(this.config.apiEndpoints.analyzeProfile, {
@@ -1569,6 +1664,12 @@ DashboardModule.submitProfileForAnalysis = function(profilePayload, userSkills) 
         .then(data => {
             // Profile analysis completed
 
+            if (data && data.normalized_profile && typeof data.normalized_profile === 'object') {
+                this.state.lastProfile = this.mergeProfiles(data.normalized_profile, this.state.lastProfile || {});
+                this.state.lastSkills = Array.isArray(this.state.lastProfile.skills) ? this.state.lastProfile.skills : this.state.lastSkills;
+                this.state.hasSessionInput = this.hasMeaningfulProfile(this.state.lastProfile);
+            }
+
             if (data.data_message) {
                 if (data.data_source && data.data_source !== 'adzuna') {
                     this.setProfileStatus('Live market data unavailable');
@@ -1580,13 +1681,17 @@ DashboardModule.submitProfileForAnalysis = function(profilePayload, userSkills) 
 
             if (data.recommendations && data.recommendations.length) {
                 this.renderRecommendations(data.recommendations, userSkills);
+                this.renderExplainableOutput(data.recommendations);
                 this.updateResearchMetrics(data.recommendations);
                 this.setProfileStatus('Recommendations ready');
+                this.loadSkillDemandAnalytics();
             } else {
                 if (!data.data_message) {
                     this.showAlert('warning', 'No skill-based career matches found yet. Add or refine skills and try again.');
                 }
                 this.showEmptyRecommendations();
+                this.renderExplainableOutput([]);
+                this.loadSkillDemandAnalytics();
                 this.updateSkillGapSummary([]);
                 this.updateRoadmap([]);
                 this.resetLiveJobsPanel({
@@ -2391,14 +2496,14 @@ DashboardModule.showAlert = function(type, message) {
         </div>
     `;
     document.body.insertAdjacentHTML('beforeend', alertHTML);
-    // Auto remove after 5 seconds
+    // Auto remove after 4 seconds
     setTimeout(() => {
         const alert = document.getElementById(alertId);
         if (alert) {
             alert.classList.add('notification-slide-out');
             setTimeout(() => alert.remove(), 400);
         }
-    }, 5000);
+    }, 4000);
 };
 
 DashboardModule.getAlertIcon = function(type) {
