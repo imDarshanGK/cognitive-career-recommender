@@ -772,7 +772,7 @@ AuthModule.showAlert = function(type, message) {
 
     alertContainer.insertAdjacentHTML('afterbegin', alertHTML);
 
-    const removeDelay = 5000;
+    const removeDelay = 4000;
     setTimeout(() => {
         const alertElem = document.getElementById(alertId);
         if (alertElem) {
